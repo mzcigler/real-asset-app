@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { colors } from './styles/theme';
 
 type InfoPopupProps = {
   visible: boolean;
@@ -37,14 +38,6 @@ export default function InfoPopup({
     }
   }, [visible, autoDismiss]);
 
-  // Colors based on type
-  const titleColor =
-    type === 'success' ? 'text-green-600' : type === 'warning' ? 'text-yellow-600' : 'text-red-600';
-  const messageColor =
-    type === 'success' ? 'text-green-800' : type === 'warning' ? 'text-yellow-800' : 'text-red-800';
-  const confirmButtonColor =
-    type === 'success' ? 'bg-green-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-red-500';
-
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       {/* Backdrop */}
@@ -56,13 +49,13 @@ export default function InfoPopup({
         <View className="bg-white rounded-xl p-6 w-full max-w-xs shadow-md">
           {/* Title */}
           {title && (
-            <Text className={`text-xl font-bold mb-3 text-center ${titleColor}`}>
+            <Text className={`text-xl font-bold mb-3 text-center ${colors[`${type}Title`]}`}>
               {title}
             </Text>
           )}
 
           {/* Message */}
-          <Text className={`text-base mb-6 text-center ${messageColor}`}>
+          <Text className={`text-base mb-6 text-center ${colors[`${type}Text`]}`}>
             {message}
           </Text>
 
@@ -78,7 +71,7 @@ export default function InfoPopup({
             )}
             {showConfirm && (
               <TouchableOpacity
-                className={`px-4 py-3 rounded-lg ${confirmButtonColor}`}
+                className={`px-4 py-3 rounded-lg ${colors[`${type}Text`]}`}
                 onPress={() => {
                   onConfirm?.();
                   onClose();

@@ -18,7 +18,7 @@ export function SingleLineInput({
 }: SingleLineInputProps) {
   return (
     <TextInput
-      className={`border border-gray-400 p-3 mb-3 w-full max-w-lg rounded-lg bg-white ${textColor} ${fontWeight} ${customStyle}`}
+      className={`border border-gray-400 p-3 mb-3 w-full max-w-xs rounded-lg bg-white ${textColor} ${fontWeight} ${customStyle}`}
       placeholder={placeholderText}
       placeholderTextColor={placeholderColor.replace('text-', '')} // remove "text-" for React Native
       {...props}

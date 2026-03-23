@@ -1,5 +1,6 @@
 import { Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
+
 type StandardButtonProps = TouchableOpacityProps & {
   title: string;
   bgColor?: string;        // background color (Tailwind class)

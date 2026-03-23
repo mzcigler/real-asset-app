@@ -57,7 +57,7 @@ export default function LoginScreen() {
         bgColor="bg-white"
         textColor="text-blue-600"
         fontWeight="font-bold"
-        customStyle="border border-blue-600 max-w-48"
+        customStyle="border border-blue-600 max-w-xs"
       />
       <InfoPopup
         visible={popupVisible}
