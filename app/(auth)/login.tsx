@@ -1,19 +1,27 @@
 import { StandardButton } from '@/components/Buttons';
+import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
  
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleLogin = async () => {
+    setError('');  
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return Alert.alert('Login failed', error.message);
+    if (error) {
+      setError(error.message)
+      setPopupVisible(true);
+      return
+    }
     router.replace('/(tabs)/home'); // Redirect to home on success
   };
 
@@ -50,6 +58,16 @@ export default function LoginScreen() {
         textColor="text-blue-600"
         fontWeight="font-bold"
         customStyle="border border-blue-600 max-w-48"
+      />
+      <InfoPopup
+        visible={popupVisible}
+        message={error}  
+        type='error'      // now shows the actual Supabase error
+        title="Login failed"
+        onClose={() => setPopupVisible(false)}
+        showConfirm={false}          // toggle confirm button
+        cancelText="Cancel"
+        autoDismiss={5000}          // auto-close after 5 seconds
       />
     </View>
   );
