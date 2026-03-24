@@ -24,7 +24,7 @@ export function SingleLineInput({
 }: BaseInputProps & { adjustFontSize?: boolean; minFontSize?: number }) {
   return (
   <TextInput
-    className={`border border-gray-400 p-3 mb-3 w-full max-w-xl rounded-lg bg-white 
+    className={`border border-gray-400 p-3 mb-3 w-full rounded-lg bg-white 
       ${textColor} ${fontWeight} ${customStyle}`}
     placeholder={placeholderText}
     placeholderTextColor={placeholderColor.replace('text-', '')}
@@ -53,7 +53,7 @@ export function MultiLineInput({
       multiline
       textAlignVertical="top"
       scrollEnabled
-      className={`border border-gray-400 p-3 mb-3 w-full max-w-xl rounded-lg bg-white
+      className={`border border-gray-400 p-3 mb-3 w-full rounded-lg bg-white
         ${textColor} ${fontWeight} ${customStyle}`}
       style={[
         { minHeight: 80 }, // default ~3 lines

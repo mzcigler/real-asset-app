@@ -122,6 +122,7 @@ const handleRegister = async () => {
         fontWeight="font-semibold"
         keyboardType="email-address"
         autoCapitalize="none"
+        customStyle='max-w-xs'
       />
 
       <SingleLineInput
@@ -131,6 +132,7 @@ const handleRegister = async () => {
         placeholderColor="text-gray-400"
         textColor="text-black"
         fontWeight="font-semibold"
+        customStyle='max-w-xs'
         secureTextEntry
       />
 

@@ -35,6 +35,7 @@ export default function LoginScreen() {
         textColor="text-black"
         fontWeight="font-semibold"
         keyboardType="email-address"
+        customStyle='max-w-xs'
         autoCapitalize="none"
       />
       <SingleLineInput
@@ -44,6 +45,7 @@ export default function LoginScreen() {
         placeholderColor="text-gray-400"
         textColor="text-black"
         fontWeight="font-semibold"
+        customStyle='max-w-xs'
         secureTextEntry
       />
       <StandardButton 
