@@ -1,12 +1,14 @@
 import { StandardButton } from '@/components/Buttons';
+import UploadPopup from '@/components/UploadPopup';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 
 export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [uploadVisible, setUploadVisible] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -18,10 +20,8 @@ export default function HomeScreen() {
     getUser();
   }, []);
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) return Alert.alert('Logout failed', error.message);
-    router.replace('/(auth)/login');
+  const handleUpload = async () => {
+    setUploadVisible
   };
 
   return (
@@ -30,13 +30,19 @@ export default function HomeScreen() {
       <Text className="text-2xl font-bold mb-4">Welcome!</Text>
       <Text className="mb-4">User ID: {userId ?? 'Loading...'}</Text>
       <StandardButton
-              title="Logout" 
-              onPress={handleLogout}
-              bgColor="bg-red-500"
-              textColor="text-white"
+              title="Upload New Document" 
+              onPress={() => setUploadVisible(true)}
+              bgColor="bg-white"
+              textColor="text-Black"
               fontWeight="font-semibold"
-              customStyle="border border-blue-600 max-w-36"
+              customStyle="border border-blue-600 max-w-xs"
             />
+
+      <UploadPopup
+        visible={uploadVisible}
+        userId={userId!}
+        onClose={() => setUploadVisible(false)}
+      />
     </ScreenWrapper>
   );
 }
