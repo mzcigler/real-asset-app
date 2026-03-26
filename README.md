@@ -56,3 +56,5 @@ npx supabase start
 npx supabase functions serve --env-file supabase/.env --no-verify-jwt
 
 matjaz@matjaz-ubuntu:~/projects/real-asset-app$ curl -X POST http://127.0.0.1:54321/functions/v1/ExtractTasksUsingLLM   -H "Content-Type: application/json"   -d '{"text":"Finish the report by Friday and call John tomorrow"}'
+npx expo export --platform web
+npx gh-pages -d dist

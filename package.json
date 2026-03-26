@@ -1,6 +1,7 @@
 {
   "name": "real-asset-app",
   "main": "expo-router/entry",
+  "homepage": "https://mzcigler.github.io/real-asset-app",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
