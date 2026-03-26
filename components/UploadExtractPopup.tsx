@@ -1,30 +1,44 @@
 import { extractTasks } from '@/functions/ExtractTasksFromText';
 import { supabase } from '@/lib/supabase';
 import * as DocumentPicker from 'expo-document-picker';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, ScrollView, Text, View } from 'react-native';
 import { StandardButton } from './Buttons';
 import { FileUploadZone } from './FileUploadZone';
 import { MultiLineInput } from './Inputs';
 import { LoadingModal } from './LoadingModal';
+import PropertyDropdown from './PropertiesDropdown';
+import TaskConfirmationPopup from './TaskConfirmationPopup';
+import { TaskType } from './types';
 
-type UploadPopupProps = {
+type UploadExtractPopupProps = {
   visible: boolean;
   userId: string;
   onClose: () => void;
 };
 
-export default function UploadPopup({
+export default function UploadExtractPopup({
   visible,
   userId,
   onClose,
-}: UploadPopupProps) {
+}: UploadExtractPopupProps) {
   const [fileName, setFileName] = useState<string | undefined>();
+  const [fileId, setFileId] = useState<string | undefined>();
   const [selectedFile, setSelectedFile] = useState<any>(null); // NEW: store full file object
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [desc, setDesc] = useState<string>(''); // assuming desc is from an input
+  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [extractedTasks, setExtractedTasks] = useState<TaskType[]>([]);
+  const [showTaskPopup, setShowTaskPopup] = useState(false); 
+  const isDisabled = uploading || extracting || !selectedFile || !selectedProperty;
 
+  useEffect(() => {      
+      setExtracting(false);
+      if (extractedTasks && extractedTasks.length > 0) {
+        setShowTaskPopup(true);
+      }
+  }, [extractedTasks]);
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ["application/pdf", "text/plain"], // only allow PDF + TXT
@@ -39,15 +53,14 @@ export default function UploadPopup({
     setSelectedFile(file);
   };
 
-  const uploadFile = async (file: any): Promise<string> => {
+  const uploadFile = async (file: any, propertyId: string): Promise<string> => {
     try {
       setUploading(true);
 
       const response = await fetch(file.uri);
       const blob = await response.blob();
 
-      const filePath = `${userId}/${Date.now()}-${file.name}`; // local variable
-
+      const filePath = `${propertyId}/${Date.now()}-${file.name}`; // use propertyId folder
       // Upload to correct bucket
       const { error: uploadError } = await supabase.storage
         .from('user_files')
@@ -55,18 +68,20 @@ export default function UploadPopup({
 
       if (uploadError) throw uploadError;
 
-      // Store reference in DB
-      const { error: dbError } = await supabase
+      // Insert file record & get the inserted id
+      const { data, error: dbError } = await supabase
         .from('files')
         .insert({
-          user_id: userId,
+          property_id: propertyId,
           file_path: filePath,
           file_name: file.name,
-        });
+        })
+        .select('id')      // <--- get the inserted file id
+        .single();
 
       if (dbError) throw dbError;
-
-      return filePath; // <-- return path
+      setFileId(data.id);
+      return filePath;
     } catch (err: any) {
       console.error("Upload failed:", err.message);
       throw err;
@@ -83,20 +98,35 @@ export default function UploadPopup({
   };
 
   const handleExtractTasksFromFile = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !selectedProperty) return;
 
     try {
       // Upload file and get the actual path
-      const uploadedFilePath = await uploadFile(selectedFile);
+      const uploadedFilePath = await uploadFile(selectedFile, selectedProperty);
       setExtracting(true);
-      // Now pass description + file path to your extractTasks function
-      console.log(uploadedFilePath);
-      const tasks = await extractTasks(
+
+      const rawTasks = await extractTasks(
         desc !== "" ? desc : "No additional description, just the file",
         uploadedFilePath
-      );      
-      setExtracting(false)
-      console.log("Extracted tasks:", tasks);
+      );
+
+      const tasks: TaskType[] = rawTasks.map(task => {
+        let dueDate: Date | null = null;
+        if (task.dueDate) {
+          const [year, month, day] = task.dueDate.split('-').map(Number);
+
+          if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+            dueDate = new Date(year, month - 1, day);
+          }
+        }
+
+        return {
+          ...task,
+          dueDate,
+        };
+      });
+
+      setExtractedTasks(tasks);
     } catch (err) {
       console.error("Error extracting tasks:", err);
     }
@@ -134,12 +164,19 @@ export default function UploadPopup({
 
             <FileUploadZone
               onPickFile={pickFile}
-              onClearFile={() => setFileName(undefined)}
+              onClearFile={() => {
+                setFileName(undefined);
+                setSelectedFile(null);
+              }}
               uploading={uploading}
               fileName={fileName}
             />
-
-            <Text style={{ fontWeight: 'bold', marginTop: 12 }}>Description of the document:</Text>
+            <PropertyDropdown
+              userId={userId}
+              selectedProperty={selectedProperty}
+              onSelect={setSelectedProperty}
+            />
+            <Text style={{ fontWeight: 'bold', marginTop: 6 }}>Description of the document:</Text>
             <Text style={{ fontSize: 12, marginBottom: 6 }}>
               Include a basic description and/or specific tasks, items, or any additional information
               you want included in the file extraction (no description means model will pull default tasks/notes from document)
@@ -156,9 +193,9 @@ export default function UploadPopup({
 
             <StandardButton
               title="Upload & Extract Tasks"
-              disabled={uploading || extracting || !selectedFile}
-              bgColor={uploading || extracting || !selectedFile ? "bg-gray-400" : "bg-green-700"}
-              textColor={uploading || extracting || !selectedFile ? "text-gray-200" : "text-white"}
+              disabled={isDisabled}
+              bgColor={isDisabled ? "bg-gray-400" : "bg-green-700"}
+              textColor={isDisabled  ? "text-gray-200" : "text-white"}
               onPress={handleExtractTasksFromFile}
               fontWeight="font-semibold"
             />
@@ -181,6 +218,18 @@ export default function UploadPopup({
             />
           </View>
         </ScrollView>
+        <TaskConfirmationPopup
+          visible={showTaskPopup}
+          tasks={extractedTasks}
+          fileId={fileId}  
+          onClose={(saved) => {
+              setShowTaskPopup(false);
+              setExtractedTasks([]);
+            if (saved) {
+              handleClose();
+            }
+          }}
+        />
       </View>
     </Modal>
   );

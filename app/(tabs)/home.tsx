@@ -1,5 +1,6 @@
+import AddPropertyPopup from '@/components/AddPropertyPopup';
 import { StandardButton } from '@/components/Buttons';
-import UploadPopup from '@/components/UploadPopup';
+import UploadExtractPopup from '@/components/UploadExtractPopup';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
@@ -9,6 +10,7 @@ import { supabase } from '../../lib/supabase';
 export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,18 +32,30 @@ export default function HomeScreen() {
       <Text className="text-2xl font-bold mb-4">Welcome!</Text>
       <Text className="mb-4">User ID: {userId ?? 'Loading...'}</Text>
       <StandardButton
-              title="Upload New Document" 
-              onPress={() => setUploadVisible(true)}
-              bgColor="bg-white"
-              textColor="text-Black"
-              fontWeight="font-semibold"
-              customStyle="border border-blue-600 max-w-xs"
-            />
+        title="Upload New Document" 
+        onPress={() => setUploadVisible(true)}
+        bgColor="bg-white"
+        textColor="text-Black"
+        fontWeight="font-semibold"
+        customStyle="border border-blue-600 max-w-xs"
+      />
+      <StandardButton
+        title="Add New Property" 
+        onPress={() => setAddPropertyVisible(true)}
+        bgColor="bg-white"
+        textColor="text-Black"
+        fontWeight="font-semibold"
+        customStyle="border border-blue-600 max-w-xs"
+      />
 
-      <UploadPopup
+      <UploadExtractPopup
         visible={uploadVisible}
         userId={userId!}
         onClose={() => setUploadVisible(false)}
+      />
+      <AddPropertyPopup
+        visible={addPropertyVisible}
+        onClose={() => setAddPropertyVisible(false)}
       />
     </ScreenWrapper>
   );

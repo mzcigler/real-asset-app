@@ -22,7 +22,7 @@ export function StandardButton({
   return (
     <TouchableOpacity
       disabled={disabled}
-      className={`p-3 mb-3 w-full rounded-lg items-center ${bgColor} ${customStyle}`}
+      className={`p-3 mb-3 rounded-lg items-center ${bgColor} ${customStyle}`}
       {...props}
     >
       <Text className={`${textColor} ${fontWeight}`}>{title}</Text>

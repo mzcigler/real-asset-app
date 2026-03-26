@@ -2,15 +2,13 @@ import { supabase } from "@/lib/supabase";
 
 type Task = {
   title: string;
-  due_date: string | null;
+  dueDate: string | null;
 };
 
 export const extractTasks = async (
   description: string, // file content / description
   filePath: string      // path of the file in Supabase storage
 ): Promise<Task[]> => {
-  console.log("Description is:", description);
-  console.log("File path is:", filePath);
   const payload = {
     description,   // renamed from text
     file_path: filePath
