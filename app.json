@@ -24,7 +24,7 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      "baseUrl": "/real-asset-app/"
+      "basePath": "/real-asset-app"
     },
     "plugins": [
       "expo-router",
