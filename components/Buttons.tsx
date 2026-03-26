@@ -7,6 +7,7 @@ type StandardButtonProps = TouchableOpacityProps & {
   textColor?: string;      // text color (Tailwind class)
   fontWeight?: string;     // font weight (Tailwind class, e.g., "font-bold")
   customStyle?: string;    // additional Tailwind classes
+  disabled?: boolean;
 };
 
 export function StandardButton({
@@ -14,11 +15,13 @@ export function StandardButton({
   bgColor = 'bg-blue-500',
   textColor = 'text-white',
   fontWeight = 'font-semibold',
-  customStyle = '',
+  customStyle = '', 
+  disabled = false,
   ...props
 }: StandardButtonProps) {
   return (
     <TouchableOpacity
+      disabled={disabled}
       className={`p-3 mb-3 w-full rounded-lg items-center ${bgColor} ${customStyle}`}
       {...props}
     >

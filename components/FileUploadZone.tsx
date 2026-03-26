@@ -43,6 +43,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             style={{ marginBottom: 6 }}
           />
           <Text style={styles.dropZoneText}>Click to upload file</Text>
+          <Text style={styles.dropZoneText}>(.pdf or .txt)</Text>
         </TouchableOpacity>
       )}
 
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     borderColor: '#cbd5e1',
     borderStyle: 'dashed',
     borderRadius: 10,
-    paddingVertical: 32,
+    paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f8fafc',

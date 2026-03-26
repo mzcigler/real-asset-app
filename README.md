@@ -48,3 +48,11 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+serve supabase functions 
+m
+npx supabase start
+npx supabase functions serve --env-file supabase/.env --no-verify-jwt
+
+matjaz@matjaz-ubuntu:~/projects/real-asset-app$ curl -X POST http://127.0.0.1:54321/functions/v1/ExtractTasksUsingLLM   -H "Content-Type: application/json"   -d '{"text":"Finish the report by Friday and call John tomorrow"}'
