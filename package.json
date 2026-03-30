@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "predeploy": "EXPO_PUBLIC_BASE_URL=/real-asset-app expo export -p web && touch dist/.nojekyll",
+    "predeploy": "expo export -p web --clear",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
