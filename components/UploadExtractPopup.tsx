@@ -15,12 +15,14 @@ type UploadExtractPopupProps = {
   visible: boolean;
   userId: string;
   onClose: () => void;
+  initialPropertyId?: string;
 };
 
 export default function UploadExtractPopup({
   visible,
   userId,
   onClose,
+  initialPropertyId,
 }: UploadExtractPopupProps) {
   const [fileName, setFileName] = useState<string | undefined>();
   const [fileId, setFileId] = useState<string | undefined>();
@@ -28,7 +30,7 @@ export default function UploadExtractPopup({
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [desc, setDesc] = useState<string>(''); // assuming desc is from an input
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<string | null>(initialPropertyId ?? null);
   const [extractedTasks, setExtractedTasks] = useState<TaskType[]>([]);
   const [showTaskPopup, setShowTaskPopup] = useState(false); 
   const isDisabled = uploading || extracting || !selectedFile || !selectedProperty;
@@ -93,7 +95,9 @@ export default function UploadExtractPopup({
     onClose();
     setTimeout(() => {
       setFileName(undefined);
-      setSelectedFile(null); // also clear file state
+      setSelectedFile(null);
+      setDesc('');
+      setSelectedProperty(initialPropertyId ?? null);
     }, 250);
   };
 

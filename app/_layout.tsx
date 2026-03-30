@@ -40,8 +40,9 @@ export default function RootLayout() {
         {!user ? (
           <Stack.Screen name="(auth)/*" options={{ headerShown: false }} />
         ) : (
-          <Stack.Screen name="(tabs)/home" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)/dashboard" options={{ headerShown: false }} />
         )}
+        <Stack.Screen name="property/[id]" options={{ headerShown: true }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

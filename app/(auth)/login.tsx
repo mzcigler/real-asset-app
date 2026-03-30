@@ -22,7 +22,7 @@ export default function LoginScreen() {
       setPopupVisible(true);
       return
     }
-    router.replace('/(tabs)/home'); // Redirect to home on success
+    router.replace('/(tabs)/dashboard');
   };
 
   return (

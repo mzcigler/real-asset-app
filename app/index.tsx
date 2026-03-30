@@ -10,7 +10,7 @@ export default function IndexRedirect() {
     const redirect = async () => {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
-        router.replace('(tabs)/home'); // user logged in
+        router.replace('/(tabs)/dashboard');
       } else {
         router.replace('(auth)/login'); // not logged in
       }
