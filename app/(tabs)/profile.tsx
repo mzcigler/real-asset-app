@@ -120,32 +120,31 @@ export default function ProfileScreen() {
         phone={phone}
         setPhone={setPhone}
       />
-
       <StandardButton
         title="Save Changes"
         onPress={handleSave}
-        customStyle="bg-green-500 max-w-xs"
+        bgColor="bg-green-600"
+        textColor="text-white"
+        fontWeight="font-bold"
+        customStyle="w-full max-w-xs"
       />
-        {/* TODO */}
+
       <StandardButton
         title="Change Password"
         onPress={() => router.push('/(auth)/change-password')}
-        bgColor="bg-yellow-500"
+        bgColor="bg-gray-700"
         textColor="text-white"
         fontWeight="font-semibold"
-        customStyle="max-w-xs"
+        customStyle="w-full max-w-xs"
       />
 
-
-
-      {/* Logout */}
       <StandardButton
         title="Logout"
         onPress={handleLogout}
-        bgColor="bg-red-500"
+        bgColor="bg-red-600"
         textColor="text-white"
         fontWeight="font-semibold"
-        customStyle="max-w-xs"
+        customStyle="w-full max-w-xs"
       />
       <InfoPopup
         visible={popupVisible}

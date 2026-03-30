@@ -139,16 +139,18 @@ const handleRegister = async () => {
       <StandardButton
         title="Register"
         onPress={handleRegister}
-        customStyle="bg-green-500 max-w-xs"
+        textColor="text-white"
+        bgColor="bg-green-600"
+        fontWeight="font-bold"
+        customStyle="w-full max-w-xs"
       />
-
       <StandardButton
         title="Back to login"
         onPress={() => router.push('/(auth)/login')}
         bgColor="bg-white"
-        textColor="text-blue-600"
-        fontWeight="font-bold"
-        customStyle="border border-blue-600 max-w-xs"
+        textColor="text-green-600"
+        fontWeight="font-semibold"
+        customStyle="border border-green-600 w-full max-w-xs"
       />
 
       <InfoPopup

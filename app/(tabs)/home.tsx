@@ -37,7 +37,7 @@ export default function HomeScreen() {
         bgColor="bg-white"
         textColor="text-Black"
         fontWeight="font-semibold"
-        customStyle="border border-blue-600 max-w-xs"
+        customStyle="border border-blue-600 w-full max-w-xs"
       />
       <StandardButton
         title="Add New Property" 
@@ -45,7 +45,7 @@ export default function HomeScreen() {
         bgColor="bg-white"
         textColor="text-Black"
         fontWeight="font-semibold"
-        customStyle="border border-blue-600 max-w-xs"
+        customStyle="border border-blue-600 w-full max-w-xs"
       />
 
       <UploadExtractPopup

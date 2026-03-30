@@ -51,7 +51,7 @@ export default function LoginScreen() {
       <StandardButton 
         title="Login" 
         onPress={handleLogin}
-        customStyle="bg-blue-500 max-w-xs"
+        customStyle="bg-blue-500 w-full max-w-xs"
       />
       <StandardButton
         title="Create an account" 
@@ -59,7 +59,7 @@ export default function LoginScreen() {
         bgColor="bg-white"
         textColor="text-blue-600"
         fontWeight="font-bold"
-        customStyle="border border-blue-600 max-w-xs"
+        customStyle="border border-blue-600 w-full max-w-xs"
       />
       <InfoPopup
         visible={popupVisible}
