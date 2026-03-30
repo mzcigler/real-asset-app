@@ -155,8 +155,8 @@ export default function UploadExtractPopup({
         >
           {/* Modal content box */}
           <View style={{
-            width: 500,
-            maxWidth: '90%',
+            width: '90%',
+            maxWidth: 500,
             backgroundColor: 'white',
             borderRadius: 16,
             padding: 24,
