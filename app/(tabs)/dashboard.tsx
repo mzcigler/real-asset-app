@@ -279,7 +279,7 @@ export default function HomeScreen() {
         ) : (
           <PropertyScrollRow
             properties={properties}
-            onPress={(id) => router.push(`/property/${id}` as any)}
+            onPress={(id) => router.push(`/(tabs)/property/${id}` as any)}
             onRename={(property) => { setRenameText(property.name); setRenamingProperty(property); }}
             onDelete={(property) => setPendingDeleteIds([property.id])}
             selectedIds={selectedIds}

@@ -36,13 +36,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        {!user ? (
-          <Stack.Screen name="(auth)/*" options={{ headerShown: false }} />
-        ) : (
-          <Stack.Screen name="(tabs)/dashboard" options={{ headerShown: false }} />
-        )}
-        <Stack.Screen name="property/[id]" options={{ headerShown: true }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

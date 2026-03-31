@@ -1,13 +1,10 @@
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Tabs, useRouter } from 'expo-router';
+import AppHeader from '@/components/AppHeader';
+import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const router = useRouter();
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,7 +13,7 @@ export default function TabLayout() {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) {
-        router.replace('/(auth)/login'); // redirect if not logged in
+        router.replace('/(auth)/login');
       } else {
         setUser(data.user);
       }
@@ -26,7 +23,7 @@ export default function TabLayout() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        router.replace('/(auth)/login'); // redirect if logged out
+        router.replace('/(auth)/login');
       } else {
         setUser(session.user);
       }
@@ -35,29 +32,12 @@ export default function TabLayout() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (loading || !user) return null; // wait until we know if user is logged in
+  if (loading || !user) return null;
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'My Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
+      <AppHeader />
+      <Slot />
+    </View>
   );
 }

@@ -103,7 +103,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenWrapper>
-      <Text className="text-2xl font-bold mb-4">Profile</Text>
+      <Text className="text-2xl font-bold mb-4">My Profile</Text>
 
       <Text className="mb-4 font-bold">Email: {email}</Text>
       {/* First + Last Name */}

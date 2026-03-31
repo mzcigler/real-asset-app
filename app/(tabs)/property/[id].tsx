@@ -5,7 +5,7 @@ import { TaskType } from '@/components/types';
 import UploadExtractPopup from '@/components/UploadExtractPopup';
 import { supabase } from '@/lib/supabase';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
@@ -55,6 +55,7 @@ function dbTaskToTaskType(t: DBTask): TaskType {
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [propertyName, setPropertyName] = useState('');
   const [tasks, setTasks] = useState<DBTask[]>([]);
@@ -81,7 +82,6 @@ export default function PropertyDetailScreen() {
     if (id) loadData();
   }, [id]);
 
-  // Clear selection when switching tabs
   useEffect(() => {
     setTaskSelectionMode(false);
     setTaskSelectedIds([]);
@@ -182,7 +182,6 @@ export default function PropertyDetailScreen() {
     }
   };
 
-  // Task selection handlers
   const handleEnterTaskSelectionMode = (id: string) => {
     setTaskSelectionMode(true);
     setTaskSelectedIds([id]);
@@ -203,7 +202,6 @@ export default function PropertyDetailScreen() {
     setTaskSelectionMode(false);
   };
 
-  // File selection handlers
   const handleEnterFileSelectionMode = (id: string) => {
     setFileSelectionMode(true);
     setFileSelectedIds([id]);
@@ -296,98 +294,112 @@ export default function PropertyDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: propertyName || 'Property' }} />
       <ScrollView style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
         <View style={{ padding: 16, alignItems: 'center' }}>
-        <View style={{ width: '100%', maxWidth: 480 }}>
-          {/* Section tabs + action buttons */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
-            <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#e5e7eb', borderRadius: 10, padding: 4 }}>
-              {(['tasks', 'files'] as Section[]).map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  onPress={() => setSection(s)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    backgroundColor: section === s ? 'white' : 'transparent',
-                  }}
-                >
-                  <Text style={{ fontWeight: section === s ? '600' : '400', color: section === s ? '#111827' : '#6b7280' }}>
-                    {s === 'tasks' ? `Tasks (${tasks.length})` : `Files (${visibleFiles.length})`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          <View style={{ width: '100%', maxWidth: 480 }}>
+
+            {/* Back button + property name */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/dashboard')}
+                style={{ padding: 4 }}
+                hitSlop={8}
+              >
+                <MaterialIcons name="arrow-back" size={22} color="#374151" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827', flex: 1 }} numberOfLines={1}>
+                {propertyName || 'Property'}
+              </Text>
             </View>
 
-            {activeSelectionMode ? (
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <TouchableOpacity
-                  onPress={handleCancelSelection}
-                  style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: '#f3f4f6' }}
-                >
-                  <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleDeleteSelected}
-                  disabled={activeSelectedIds.length === 0}
-                  style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: activeSelectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
-                >
-                  <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>
-                    Delete{activeSelectedIds.length > 0 ? ` (${activeSelectedIds.length})` : ''}
-                  </Text>
-                </TouchableOpacity>
+            {/* Section tabs + action buttons */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+              <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#e5e7eb', borderRadius: 10, padding: 4 }}>
+                {(['tasks', 'files'] as Section[]).map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    onPress={() => setSection(s)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      backgroundColor: section === s ? 'white' : 'transparent',
+                    }}
+                  >
+                    <Text style={{ fontWeight: section === s ? '600' : '400', color: section === s ? '#111827' : '#6b7280' }}>
+                      {s === 'tasks' ? `Tasks (${tasks.length})` : `Files (${visibleFiles.length})`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
+
+              {activeSelectionMode ? (
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    onPress={handleCancelSelection}
+                    style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: '#f3f4f6' }}
+                  >
+                    <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleDeleteSelected}
+                    disabled={activeSelectedIds.length === 0}
+                    style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: activeSelectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
+                  >
+                    <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>
+                      Delete{activeSelectedIds.length > 0 ? ` (${activeSelectedIds.length})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => section === 'tasks' ? setAddTaskVisible(true) : setUploadVisible(true)}
+                  style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MaterialIcons name="add" size={22} color="white" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {loading ? (
+              <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 40 }} />
+            ) : section === 'tasks' ? (
+              <>
+                {tasks.length === 0 && (
+                  <Text style={{ color: '#6b7280', textAlign: 'center', marginTop: 16, marginBottom: 16 }}>No tasks yet.</Text>
+                )}
+                {tasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={dbTaskToTaskType(task)}
+                    onUpdate={(updated) => handleUpdateTask(task.id, updated)}
+                    onDelete={() => setPendingDeleteTaskIds([task.id])}
+                    selected={taskSelectedIds.includes(task.id)}
+                    selectionMode={taskSelectionMode}
+                    onLongPress={() => taskSelectionMode ? handleToggleTaskSelect(task.id) : handleEnterTaskSelectionMode(task.id)}
+                  />
+                ))}
+              </>
             ) : (
-              <TouchableOpacity
-                onPress={() => section === 'tasks' ? setAddTaskVisible(true) : setUploadVisible(true)}
-                style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <MaterialIcons name="add" size={22} color="white" />
-              </TouchableOpacity>
+              <>
+                {visibleFiles.length === 0 && (
+                  <Text style={{ color: '#6b7280', textAlign: 'center', marginTop: 16, marginBottom: 16 }}>No files yet.</Text>
+                )}
+                {visibleFiles.map((file) => (
+                  <FileItem
+                    key={file.id}
+                    fileName={file.file_name}
+                    onOpen={() => handleDownloadFile(file.file_path, file.file_name)}
+                    onDelete={() => setPendingDeleteFileIds([file.id])}
+                    selected={fileSelectedIds.includes(file.id)}
+                    selectionMode={fileSelectionMode}
+                    onLongPress={() => fileSelectionMode ? handleToggleFileSelect(file.id) : handleEnterFileSelectionMode(file.id)}
+                  />
+                ))}
+              </>
             )}
           </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 40 }} />
-          ) : section === 'tasks' ? (
-            <>
-              {tasks.length === 0 && (
-                <Text style={{ color: '#6b7280', textAlign: 'center', marginTop: 16, marginBottom: 16 }}>No tasks yet.</Text>
-              )}
-              {tasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={dbTaskToTaskType(task)}
-                  onUpdate={(updated) => handleUpdateTask(task.id, updated)}
-                  onDelete={() => setPendingDeleteTaskIds([task.id])}
-                  selected={taskSelectedIds.includes(task.id)}
-                  selectionMode={taskSelectionMode}
-                  onLongPress={() => taskSelectionMode ? handleToggleTaskSelect(task.id) : handleEnterTaskSelectionMode(task.id)}
-                />
-              ))}
-            </>
-          ) : (
-            <>
-              {visibleFiles.length === 0 && (
-                <Text style={{ color: '#6b7280', textAlign: 'center', marginTop: 16, marginBottom: 16 }}>No files yet.</Text>
-              )}
-              {visibleFiles.map((file) => (
-                <FileItem
-                  key={file.id}
-                  fileName={file.file_name}
-                  onOpen={() => handleDownloadFile(file.file_path, file.file_name)}
-                  onDelete={() => setPendingDeleteFileIds([file.id])}
-                  selected={fileSelectedIds.includes(file.id)}
-                  selectionMode={fileSelectionMode}
-                  onLongPress={() => fileSelectionMode ? handleToggleFileSelect(file.id) : handleEnterFileSelectionMode(file.id)}
-                />
-              ))}
-            </>
-          )}
-        </View>
         </View>
       </ScrollView>
 
@@ -404,7 +416,6 @@ export default function PropertyDetailScreen() {
         onClose={() => { setUploadVisible(false); loadData(); }}
       />
 
-      {/* Task delete confirmation */}
       <Modal transparent visible={pendingDeleteTaskIds.length > 0} animationType="fade" onRequestClose={() => setPendingDeleteTaskIds([])}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
@@ -428,7 +439,6 @@ export default function PropertyDetailScreen() {
         </View>
       </Modal>
 
-      {/* File delete confirmation */}
       <Modal transparent visible={pendingDeleteFileIds.length > 0} animationType="fade" onRequestClose={() => setPendingDeleteFileIds([])}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
