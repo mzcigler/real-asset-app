@@ -1,6 +1,7 @@
 import { DateInput } from '@/components/DateInput';
 import { useState } from 'react';
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { LoadingModal } from './LoadingModal';
 
 type Property = { id: string; name: string };
 
@@ -43,6 +44,8 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
   };
 
   return (
+    <>
+    <LoadingModal visible={saving} message="Saving task..." />
     <Modal transparent visible={visible} animationType="fade" onRequestClose={handleCancel}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ width: 340, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
@@ -120,5 +123,6 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
         </View>
       </View>
     </Modal>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { SingleLineInput } from '@/components/Inputs';
 import PhoneInput from '@/components/PhoneInput';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 
@@ -19,6 +19,7 @@ export default function ProfileScreen() {
   const [popupMessage, setPopupMessage] = useState('');
   const [popupTitle, setPopupTitle] = useState('');
   const [popupType, setPopupType] = useState<'error' | 'success' | 'warning'>('success');
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
@@ -35,7 +36,6 @@ export default function ProfileScreen() {
 
       setUserId(data.user.id);
 
-      // 🔹 Fetch profile data
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -47,7 +47,6 @@ export default function ProfileScreen() {
         setLastName(profile.surname ?? '');
 
         if (profile.phone) {
-          // split +1 from number
           if (profile.phone.startsWith('+1')) {
             setAreaCode('+1');
             setPhone(profile.phone.replace('+1', ''));
@@ -56,6 +55,8 @@ export default function ProfileScreen() {
           }
         }
       }
+
+      setLoading(false);
     };
 
     getUser();
@@ -92,11 +93,19 @@ export default function ProfileScreen() {
     router.replace('/(auth)/login');
   };
 
+  if (loading) {
+    return (
+      <ScreenWrapper>
+        <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 40 }} />
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper>
       <Text className="text-2xl font-bold mb-4">Profile</Text>
 
-      <Text className="mb-4 font-bold">Email: {email ?? 'Loading...'}</Text>
+      <Text className="mb-4 font-bold">Email: {email}</Text>
       {/* First + Last Name */}
       <View className="flex-row w-full max-w-xs mb-3 space-x-2">
         <SingleLineInput

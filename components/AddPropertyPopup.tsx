@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { Modal, ScrollView, Text, TextInput, View } from 'react-native';
 import { StandardButton } from './Buttons';
+import { LoadingModal } from './LoadingModal';
 
 type AddPropertyPopupProps = {
   visible: boolean;
@@ -46,6 +47,8 @@ export default function AddPropertyPopup({
   };
 
   return (
+    <>
+    <LoadingModal visible={adding} message="Adding property..." />
     <Modal transparent visible={visible} animationType="fade">
       <View
         style={{
@@ -111,5 +114,6 @@ export default function AddPropertyPopup({
         </ScrollView>
       </View>
     </Modal>
+    </>
   );
 }

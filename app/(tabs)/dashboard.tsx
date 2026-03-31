@@ -1,14 +1,14 @@
 import AddPropertyPopup from '@/components/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
 import { StandardButton } from '@/components/Buttons';
-import PropertyCard from '@/components/PropertyCard';
+import PropertyScrollRow from '@/components/PropertyScrollRow';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/UploadExtractPopup';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type TaskRow = {
   id: string;
@@ -28,12 +28,19 @@ export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [allTasks, setAllTasks] = useState<TaskRow[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
+  const [loadingTasks, setLoadingTasks] = useState(true);
   const [uploadVisible, setUploadVisible] = useState(false);
   const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
   const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
   const [renameText, setRenameText] = useState('');
-  const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [taskSelectedIds, setTaskSelectedIds] = useState<string[]>([]);
+  const [taskSelectionMode, setTaskSelectionMode] = useState(false);
+  const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,21 +55,28 @@ export default function HomeScreen() {
   }, []);
 
   const fetchProperties = async (uid: string) => {
+    setLoadingProperties(true);
     const { data } = await supabase
       .from('properties')
       .select('id, name')
       .eq('user_id', uid)
       .order('created_at', { ascending: false });
     setProperties(data || []);
+    setLoadingProperties(false);
   };
 
   const fetchAllTasks = async (uid: string) => {
+    setLoadingTasks(true);
     const { data: propData } = await supabase
       .from('properties')
       .select('id, name')
       .eq('user_id', uid);
 
-    if (!propData || propData.length === 0) return;
+    if (!propData || propData.length === 0) {
+      setAllTasks([]);
+      setLoadingTasks(false);
+      return;
+    }
 
     const propMap = Object.fromEntries(propData.map((p) => [p.id, p.name]));
 
@@ -71,7 +85,11 @@ export default function HomeScreen() {
       .select('id, property_id')
       .in('property_id', propData.map((p) => p.id));
 
-    if (!fileData || fileData.length === 0) return;
+    if (!fileData || fileData.length === 0) {
+      setAllTasks([]);
+      setLoadingTasks(false);
+      return;
+    }
 
     const fileToProperty = Object.fromEntries(fileData.map((f) => [f.id, f.property_id]));
 
@@ -93,6 +111,7 @@ export default function HomeScreen() {
     });
 
     setAllTasks(tasks);
+    setLoadingTasks(false);
   };
 
   const handleUpdateTask = async (taskId: string, updated: import('@/components/types').TaskType) => {
@@ -103,18 +122,47 @@ export default function HomeScreen() {
       .eq('id', taskId);
     if (!error) {
       setAllTasks((prev) =>
-        prev.map((t) =>
+        [...prev.map((t) =>
           t.id === taskId
             ? { ...t, title: updated.title, description: updated.description ?? null, due_date: dueDateStr }
             : t
-        )
+        )].sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        })
       );
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-    if (!error) setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setPendingDeleteTaskIds([taskId]);
+  };
+
+  const handleDeleteTasksConfirm = async () => {
+    if (pendingDeleteTaskIds.length === 0) return;
+    await supabase.from('tasks').delete().in('id', pendingDeleteTaskIds);
+    setAllTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
+    setPendingDeleteTaskIds([]);
+    setTaskSelectedIds([]);
+    setTaskSelectionMode(false);
+  };
+
+  const handleEnterTaskSelectionMode = (id: string) => {
+    setTaskSelectionMode(true);
+    setTaskSelectedIds([id]);
+  };
+
+  const handleToggleTaskSelect = (id: string) => {
+    setTaskSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleCancelTaskSelection = () => {
+    setTaskSelectionMode(false);
+    setTaskSelectedIds([]);
   };
 
   const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string) => {
@@ -142,10 +190,28 @@ export default function HomeScreen() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deletingProperty) return;
-    await supabase.from('properties').delete().eq('id', deletingProperty.id);
-    setProperties((prev) => prev.filter((p) => p.id !== deletingProperty.id));
-    setDeletingProperty(null);
+    if (pendingDeleteIds.length === 0) return;
+    await supabase.from('properties').delete().in('id', pendingDeleteIds);
+    setProperties((prev) => prev.filter((p) => !pendingDeleteIds.includes(p.id)));
+    setPendingDeleteIds([]);
+    setSelectedIds([]);
+    setSelectionMode(false);
+  };
+
+  const handleEnterSelectionMode = (id: string) => {
+    setSelectionMode(true);
+    setSelectedIds([id]);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedIds([]);
   };
 
   const handleRenameConfirm = async () => {
@@ -180,16 +246,80 @@ export default function HomeScreen() {
         />
 
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', flex: 1 }}>My Properties</Text>
+          {selectionMode ? (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleCancelSelection}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#f3f4f6' }}
+              >
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { if (selectedIds.length > 0) setPendingDeleteIds(selectedIds); }}
+                disabled={selectedIds.length === 0}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: selectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
+              >
+                <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>Delete {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setAddPropertyVisible(true)}
+              style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <MaterialIcons name="add" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
+        {loadingProperties ? (
+          <ActivityIndicator size="small" color="#10B981" style={{ marginVertical: 12 }} />
+        ) : properties.length === 0 ? (
+          <Text style={{ color: '#6b7280', marginBottom: 8 }}>No properties yet.</Text>
+        ) : (
+          <PropertyScrollRow
+            properties={properties}
+            onPress={(id) => router.push(`/property/${id}` as any)}
+            onRename={(property) => { setRenameText(property.name); setRenamingProperty(property); }}
+            onDelete={(property) => setPendingDeleteIds([property.id])}
+            selectedIds={selectedIds}
+            selectionMode={selectionMode}
+            onToggleSelect={handleToggleSelect}
+            onEnterSelectionMode={handleEnterSelectionMode}
+          />
+        )}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', flex: 1 }}>Upcoming Tasks</Text>
-          <TouchableOpacity
-            onPress={() => setAddTaskVisible(true)}
-            style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <MaterialIcons name="add" size={20} color="white" />
-          </TouchableOpacity>
+          {taskSelectionMode ? (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleCancelTaskSelection}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#f3f4f6' }}
+              >
+                <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { if (taskSelectedIds.length > 0) setPendingDeleteTaskIds(taskSelectedIds); }}
+                disabled={taskSelectedIds.length === 0}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: taskSelectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
+              >
+                <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>Delete {taskSelectedIds.length > 0 ? `(${taskSelectedIds.length})` : ''}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setAddTaskVisible(true)}
+              style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <MaterialIcons name="add" size={20} color="white" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {allTasks.length > 0 && (
+        {loadingTasks ? (
+          <ActivityIndicator size="small" color="#10B981" style={{ marginVertical: 12 }} />
+        ) : allTasks.length > 0 ? (
           <>
             {allTasks.map((task) => (
               <TaskItem
@@ -203,32 +333,15 @@ export default function HomeScreen() {
                 propertyName={task.propertyName}
                 onUpdate={(updated) => handleUpdateTask(task.id, updated)}
                 onDelete={() => handleDeleteTask(task.id)}
+                selected={taskSelectedIds.includes(task.id)}
+                selectionMode={taskSelectionMode}
+                onLongPress={() => taskSelectionMode ? handleToggleTaskSelect(task.id) : handleEnterTaskSelectionMode(task.id)}
               />
             ))}
           </>
+        ) : (
+          <Text style={{ color: '#6b7280', marginBottom: 8 }}>No upcoming tasks.</Text>
         )}
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', flex: 1 }}>My Properties</Text>
-          <TouchableOpacity
-            onPress={() => setAddPropertyVisible(true)}
-            style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <MaterialIcons name="add" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-        {properties.length === 0 && (
-          <Text style={{ color: '#6b7280', marginBottom: 8 }}>No properties yet.</Text>
-        )}
-        {properties.map((property) => (
-          <PropertyCard
-            key={property.id}
-            name={property.name}
-            onPress={() => router.push(`/property/${property.id}` as any)}
-            onRename={() => { setRenameText(property.name); setRenamingProperty(property); }}
-            onDelete={() => setDeletingProperty(property)}
-          />
-        ))}
 
       </View>
 
@@ -253,15 +366,19 @@ export default function HomeScreen() {
       {/* Delete confirmation modal */}
       <Modal
         transparent
-        visible={!!deletingProperty}
+        visible={pendingDeleteIds.length > 0}
         animationType="fade"
-        onRequestClose={() => setDeletingProperty(null)}
+        onRequestClose={() => setPendingDeleteIds([])}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8 }}>Delete Property</Text>
+            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8 }}>
+              {pendingDeleteIds.length === 1 ? 'Delete Property' : `Delete ${pendingDeleteIds.length} Properties`}
+            </Text>
             <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-              Are you sure you want to delete "{deletingProperty?.name}"? This cannot be undone.
+              {pendingDeleteIds.length === 1
+                ? `Are you sure you want to delete "${properties.find(p => p.id === pendingDeleteIds[0])?.name}"? This cannot be undone.`
+                : `Are you sure you want to delete ${pendingDeleteIds.length} properties? This cannot be undone.`}
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
@@ -271,7 +388,42 @@ export default function HomeScreen() {
                 <Text style={{ color: 'white', fontWeight: '600' }}>Delete</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setDeletingProperty(null)}
+                onPress={() => setPendingDeleteIds([])}
+                style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#374151' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Task delete confirmation modal */}
+      <Modal
+        transparent
+        visible={pendingDeleteTaskIds.length > 0}
+        animationType="fade"
+        onRequestClose={() => setPendingDeleteTaskIds([])}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
+            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8 }}>
+              {pendingDeleteTaskIds.length === 1 ? 'Delete Task' : `Delete ${pendingDeleteTaskIds.length} Tasks`}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
+              {pendingDeleteTaskIds.length === 1
+                ? `Are you sure you want to delete "${allTasks.find(t => t.id === pendingDeleteTaskIds[0])?.title}"? This cannot be undone.`
+                : `Are you sure you want to delete ${pendingDeleteTaskIds.length} tasks? This cannot be undone.`}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={handleDeleteTasksConfirm}
+                style={{ flex: 1, backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
+              >
+                <Text style={{ color: 'white', fontWeight: '600' }}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setPendingDeleteTaskIds([])}
                 style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
               >
                 <Text style={{ color: '#374151' }}>Cancel</Text>
