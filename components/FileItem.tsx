@@ -29,7 +29,7 @@ export default function FileItem({ fileName, onOpen, onDelete }: Props) {
         <Text style={{ fontSize: 14, color: '#111827', flex: 1 }} numberOfLines={1}>
           {fileName}
         </Text>
-        <Text style={{ color: '#2563eb', fontSize: 13 }}>Open</Text>
+        <MaterialIcons name="file-download" size={20} color="#2563eb" />
       </TouchableOpacity>
       <View style={{ width: 1, height: 36, backgroundColor: '#f3f4f6' }} />
       <TouchableOpacity

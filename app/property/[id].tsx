@@ -4,9 +4,12 @@ import TaskItem from '@/components/TaskItem';
 import { TaskType } from '@/components/types';
 import UploadExtractPopup from '@/components/UploadExtractPopup';
 import { supabase } from '@/lib/supabase';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { useEffect, useState } from 'react';
-import * as WebBrowser from 'expo-web-browser';
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,7 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 type DBTask = {
   id: string;
@@ -159,15 +161,47 @@ export default function PropertyDetailScreen() {
     if (!error) setTasks((prev) => prev.filter((t) => t.id !== taskId));
   };
 
-  const handleOpenFile = async (filePath: string) => {
+  const handleDownloadFile = async (filePath: string, fileName: string) => {
     try {
-      const { data } = await supabase.storage.from('user_files').createSignedUrl(filePath, 60);
-      if (data?.signedUrl) await WebBrowser.openBrowserAsync(data.signedUrl);
+      const { data, error } = await supabase.storage.from('user_files').download(filePath);
+
+      if (error || !data) {
+        console.error('Download error:', error);
+        return;
+      }
+
+      if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(data);
+      });
+
+      const localUri = (FileSystem.cacheDirectory ?? '') + fileName;
+      await FileSystem.writeAsStringAsync(localUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(localUri);
+      } else {
+        console.warn('Sharing is not available on this device');
+      }
     } catch (err) {
-      console.error('Failed to open file:', err);
+      console.error('Failed to download file:', err);
     }
   };
-
   const handleDeleteFile = async (fileId: string, filePath: string) => {
     await supabase.storage.from('user_files').remove([filePath]);
     await supabase.from('tasks').delete().eq('file_id', fileId);
@@ -253,14 +287,18 @@ export default function PropertyDetailScreen() {
                   No files yet.
                 </Text>
               )}
-              {visibleFiles.map((file) => (
-                <FileItem
-                  key={file.id}
-                  fileName={file.file_name}
-                  onOpen={() => handleOpenFile(file.file_path)}
-                  onDelete={() => handleDeleteFile(file.id, file.file_path)}
-                />
-              ))}
+{visibleFiles.map((file) => {
+  console.log("FILE:", file);
+
+  return (
+    <FileItem
+      key={file.id}
+      fileName={file.file_name}
+      onOpen={() => handleDownloadFile(file.file_path, file.file_name)}
+      onDelete={() => handleDeleteFile(file.id, file.file_path)}
+    />
+  );
+})}
             </>
           )}
         </View>
