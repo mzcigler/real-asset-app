@@ -1,44 +1,29 @@
-import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { Modal, ScrollView, Text, TextInput, View } from 'react-native';
-import { StandardButton } from './Buttons';
+import Button from './Button';
 import { LoadingModal } from './LoadingModal';
+import { useTheme } from '@/theme/ThemeContext';
+import { createProperty } from '@/services/propertyService';
 
-type AddPropertyPopupProps = {
+type Props = {
   visible: boolean;
   onClose: () => void;
   onPropertyAdded?: () => void;
 };
 
-export default function AddPropertyPopup({
-  visible,
-  onClose,
-  onPropertyAdded,
-}: AddPropertyPopupProps) {
+export default function AddPropertyPopup({ visible, onClose, onPropertyAdded }: Props) {
+  const { colors } = useTheme();
   const [propertyName, setPropertyName] = useState('');
   const [adding, setAdding] = useState(false);
 
-  const handleAddProperty = async () => {
+  const handleAdd = async () => {
     if (!propertyName.trim()) return;
-
     try {
       setAdding(true);
-      const user = await supabase.auth.getUser();
-      const userId = user.data.user?.id;
-      if (!userId) throw new Error('User not logged in');
-
-      const { error } = await supabase.from('properties').insert([
-        {
-          name: propertyName.trim(),
-          user_id: userId,
-        },
-      ]);
-
-      if (error) throw error;
-
+      await createProperty(propertyName.trim());
       setPropertyName('');
       onClose();
-      if (onPropertyAdded) onPropertyAdded();
+      onPropertyAdded?.();
     } catch (err: any) {
       console.error('Failed to add property:', err.message);
     } finally {
@@ -46,74 +31,71 @@ export default function AddPropertyPopup({
     }
   };
 
+  const handleCancel = () => {
+    setPropertyName('');
+    onClose();
+  };
+
   return (
     <>
-    <LoadingModal visible={adding} message="Adding property..." />
-    <Modal transparent visible={visible} animationType="fade">
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View
-            style={{
-              width: 400,
-              maxWidth: '90%',
-              backgroundColor: 'white',
-              borderRadius: 16,
-              padding: 24,
-            }}
+      <LoadingModal visible={adding} message="Adding property…" />
+      <Modal transparent visible={visible} animationType="fade">
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12 }}>
-              Add New Property
-            </Text>
-
-            <Text style={{ marginBottom: 6 }}>Property Name:</Text>
-            <TextInput
-              value={propertyName}
-              onChangeText={setPropertyName}
-              placeholder="Ex. Main House, Condo #3..."
+            <View
               style={{
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 8,
-                padding: 8,
-                marginBottom: 16,
+                width: 400,
+                maxWidth: '90%',
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 24,
               }}
-            />
+            >
+              <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: colors.textPrimary }}>
+                Add New Property
+              </Text>
 
-            <StandardButton
-              title={adding ? 'Adding...' : 'Add Property'}
-              onPress={handleAddProperty}
-              disabled={adding || !propertyName.trim()}
-              bgColor={adding || !propertyName.trim() ? 'bg-gray-400' : 'bg-green-700'}
-              textColor="text-white"
-              fontWeight="font-semibold"
-            />
+              <Text style={{ marginBottom: 6, color: colors.textSecondary }}>Property Name</Text>
+              <TextInput
+                value={propertyName}
+                onChangeText={setPropertyName}
+                placeholder="e.g. Main House, Condo #3…"
+                placeholderTextColor={colors.inputPlaceholder}
+                autoFocus
+                onSubmitEditing={handleAdd}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.inputBorder,
+                  borderRadius: 8,
+                  padding: 10,
+                  marginBottom: 16,
+                  fontSize: 15,
+                  color: colors.textPrimary,
+                  backgroundColor: colors.inputBackground,
+                }}
+              />
 
-            <StandardButton
-              title="Cancel"
-              onPress={onClose}
-              bgColor="bg-gray-100"
-              textColor="text-gray-800"
-              fontWeight="font-semibold"
-              style={{ marginTop: 8 }}
-            />
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
+              <Button
+                title={adding ? 'Adding…' : 'Add Property'}
+                onPress={handleAdd}
+                variant="success"
+                disabled={adding || !propertyName.trim()}
+                fullWidth
+                style={{ marginBottom: 10 }}
+              />
+              <Button
+                title="Cancel"
+                onPress={handleCancel}
+                variant="secondary"
+                fullWidth
+              />
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </>
   );
 }

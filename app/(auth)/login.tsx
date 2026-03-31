@@ -1,76 +1,87 @@
-import { StandardButton } from '@/components/Buttons';
+import Button from '@/components/Button';
 import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
+import ScreenWrapper from '@/components/ScreenWrapper';
+import { supabase } from '@/lib/supabase';
+import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { supabase } from '../../lib/supabase';
- 
+import { Text, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [popupVisible, setPopupVisible] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleLogin = async () => {
-    setError('');  
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    setError('');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message)
+      setError(error.message);
       setPopupVisible(true);
-      return
+      return;
     }
     router.replace('/(tabs)/dashboard');
   };
 
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-100">
-      <Text className="text-2xl font-bold mb-4">Login</Text>
-      <SingleLineInput
-        placeholderText="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        textColor="text-black"
-        fontWeight="font-semibold"
-        keyboardType="email-address"
-        customStyle='max-w-xs'
-        autoCapitalize="none"
-      />
-      <SingleLineInput
-        placeholderText="Enter your password"
-        value={password}
-        onChangeText={setPassword}
-        placeholderColor="text-gray-400"
-        textColor="text-black"
-        fontWeight="font-semibold"
-        customStyle='max-w-xs'
-        secureTextEntry
-      />
-      <StandardButton 
-        title="Login" 
-        onPress={handleLogin}
-        customStyle="bg-blue-500 w-full max-w-xs"
-      />
-      <StandardButton
-        title="Create an account" 
-        onPress={() => router.push('/(auth)/register')}
-        bgColor="bg-white"
-        textColor="text-blue-600"
-        fontWeight="font-bold"
-        customStyle="border border-blue-600 w-full max-w-xs"
-      />
+    <ScreenWrapper>
+      {/* Theme toggle */}
+      <TouchableOpacity
+        onPress={toggleTheme}
+        style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
+      >
+        <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
+      </TouchableOpacity>
+
+      <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.textPrimary }}>
+        Login
+      </Text>
+
+      <View style={{ width: '100%', maxWidth: 320 }}>
+        <SingleLineInput
+          placeholderText="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+        />
+        <SingleLineInput
+          placeholderText="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <Button
+          title="Login"
+          onPress={handleLogin}
+          variant="primary"
+          fullWidth
+          style={{ marginBottom: 10 }}
+        />
+        <Button
+          title="Create an account"
+          onPress={() => router.push('/(auth)/register')}
+          variant="secondary"
+          fullWidth
+        />
+      </View>
+
       <InfoPopup
         visible={popupVisible}
-        message={error}  
-        type='error'      // now shows the actual Supabase error
-        title="Login failed"
+        message={error}
+        type="error"
+        title="Login Failed"
         onClose={() => setPopupVisible(false)}
-        showConfirm={false}          // toggle confirm button
-        cancelText="Cancel"
-        autoDismiss={5000}          // auto-close after 5 seconds
+        showConfirm={false}
+        cancelText="Close"
+        autoDismiss={5000}
       />
-    </View>
+    </ScreenWrapper>
   );
 }

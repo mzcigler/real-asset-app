@@ -1,41 +1,35 @@
 import AppHeader from '@/components/AppHeader';
+import { supabase } from '@/lib/supabase';
+import { useTheme } from '@/theme/ThemeContext';
 import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { supabase } from '../../lib/supabase';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
   const router = useRouter();
-  const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
+    supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
         router.replace('/(auth)/login');
       } else {
-        setUser(data.user);
+        setReady(true);
       }
-      setLoading(false);
-    };
-    getUser();
+    });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        router.replace('/(auth)/login');
-      } else {
-        setUser(session.user);
-      }
+      if (!session?.user) router.replace('/(auth)/login');
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (loading || !user) return null;
+  if (!ready) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f3f4f6' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AppHeader />
       <Slot />
     </View>

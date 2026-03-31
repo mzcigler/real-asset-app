@@ -1,7 +1,8 @@
-import { MaterialIcons } from '@expo/vector-icons'; // standard file upload icon
+import { useTheme } from '@/theme/ThemeContext';
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StandardButton } from './Buttons';
+import Button from './Button';
 import { SingleLineInput } from './Inputs';
 
 interface FileUploadZoneProps {
@@ -17,16 +18,21 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   uploading = false,
   fileName,
 }) => {
+  const { colors } = useTheme();
   const [hovered, setHovered] = useState(false);
 
   const hasFile = Boolean(fileName);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={{ paddingVertical: 0 }}>
+      {/* Dropzone */}
       {!hasFile && (
-        // Dashed drop zone if no file selected
         <TouchableOpacity
-          style={[styles.dropZone, hovered && styles.dropZoneHovered]}
+          style={[
+            styles.dropZone,
+            { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground },
+            hovered && { borderColor: colors.info, backgroundColor: colors.surface },
+          ]}
           onPress={onPickFile}
           activeOpacity={0.75}
           {...(Platform.OS === 'web'
@@ -39,44 +45,52 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           <MaterialIcons
             name="file-upload"
             size={28}
-            color="#94a3b8"
+            color={colors.textMuted}
             style={{ marginBottom: 6 }}
           />
-          <Text style={styles.dropZoneText}>Click to upload file</Text>
-          <Text style={styles.dropZoneText}>(.pdf or .txt)</Text>
+          <Text style={[styles.dropZoneText, { color: colors.textSecondary }]}>
+            Click to upload file
+          </Text>
+          <Text style={[styles.dropZoneText, { color: colors.textSecondary }]}>
+            (.pdf or .txt)
+          </Text>
         </TouchableOpacity>
       )}
 
-      {/* Document Name row */}
+      {/* File input + Clear button */}
       <View style={styles.metaRow}>
-        <Text className="mb-1 font-semibold">
-          File Name <Text style={styles.required}>*</Text>
+        <Text style={{ marginBottom: 4, fontWeight: '600', color: colors.textPrimary }}>
+          File Name <Text style={{ color: colors.danger }}>*</Text>
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {/* Input takes 3/4 of the width */}
-        <View style={{ flex: 3 }}>
+          {/* File input */}
+          <View style={{ flex: 3 }}>
             <SingleLineInput
-            placeholderText="Select a file..."
-            value={fileName ?? ""}
-            placeholderColor="text-gray-400"
-            textColor="text-black"
-            fontWeight="font-semibold"
-            customStyle="w-full"
+              placeholderText="Select a file..."
+              value={fileName ?? ''}
+              editable={false}
+              style={{ marginBottom: 0 }}
             />
-        </View>
+          </View>
 
-        {/* Clear button takes 1/4 */}
+          {/* Clear X button */}
         {hasFile && (
-            <View style={{ flex: 1 }}>
-            <StandardButton
-                title="Clear file"
-                onPress={onClearFile}
-                bgColor="bg-red-600"
-                textColor="text-white"
-                fontWeight="font-semibold"
-                customStyle="w-full"
-            />
-            </View>
+          <Button
+            title="✕"
+            onPress={onClearFile}
+            variant="danger"
+            matchInputHeight
+            style={{
+              width: 40,  
+              height: 40,
+              padding: 0,
+            }}
+            textStyle={{
+              fontSize: 16,
+              marginTop: 5,
+              textAlign: 'center',   // horizontal centering
+            }}
+          />
         )}
         </View>
       </View>
@@ -85,40 +99,19 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    paddingVertical: 0,
-    backgroundColor: '#ffffff',
-  },
   dropZone: {
     borderWidth: 2,
-    borderColor: '#cbd5e1',
     borderStyle: 'dashed',
     borderRadius: 10,
     paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
     marginBottom: 20,
-  },
-  dropZoneHovered: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#eff6ff',
   },
   dropZoneText: {
     fontSize: 14,
-    color: '#64748b',
   },
   metaRow: {
     marginBottom: 12,
-  },
-
-  required: {
-    color: '#ef4444',
-  },
-  fileName: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#475569',
-    textDecorationLine: 'underline',
   },
 });

@@ -1,45 +1,34 @@
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
-import { StandardButton } from './Buttons';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Button from './Button';
 import { LoadingModal } from './LoadingModal';
 import TaskItem from './TaskItem';
-import { TaskType } from './types';
+import { useTheme } from '@/theme/ThemeContext';
+import { TaskType } from '@/types';
 
-type TaskConfirmationPopupProps = {
+type Props = {
   visible: boolean;
   tasks: TaskType[];
-  fileId: string | undefined; 
-  onClose: (saved: boolean) => void; // indicate whether tasks were saved or not
+  fileId: string | undefined;
+  onClose: (saved: boolean) => void;
 };
 
-export default function TaskConfirmationPopup({
-  visible,
-  tasks: initialTasks,
-  fileId,
-  onClose,
-}: TaskConfirmationPopupProps) {
+export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fileId, onClose }: Props) {
+  const { colors } = useTheme();
   const [tasks, setTasks] = useState<TaskType[]>(initialTasks);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (visible) setTasks(initialTasks); // reset tasks when modal opens
+    if (visible) setTasks(initialTasks);
   }, [initialTasks, visible]);
 
-  const handleUpdateTask = (index: number, updatedTask: TaskType) => {
-    const newTasks = [...tasks];
-    newTasks[index] = updatedTask;
-    setTasks(newTasks);
+  const handleUpdate = (index: number, updatedTask: TaskType) => {
+    setTasks((prev) => prev.map((t, i) => (i === index ? updatedTask : t)));
   };
 
-  const handleDeleteTask = (index: number) => {
-    const newTasks = [...tasks];
-    newTasks.splice(index, 1);
-    setTasks(newTasks);
-  };
-
-  const handleAddTask = () => {
-    setTasks([...tasks, { title: '', description: '', dueDate: null }]);
+  const handleDelete = (index: number) => {
+    setTasks((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleConfirm = async () => {
@@ -47,78 +36,76 @@ export default function TaskConfirmationPopup({
     setSaving(true);
     try {
       for (const task of tasks) {
-        const dueDateStr = task.dueDate
-          ? task.dueDate.toISOString().slice(0, 10)
-          : null;
-
         await supabase.from('tasks').insert({
           file_id: fileId,
           title: task.title,
           description: task.description,
-          due_date: dueDateStr,
+          due_date: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : null,
         });
       }
-
-      onClose(true); // ✅ indicate tasks were saved
+      onClose(true);
     } catch (err) {
-      console.error("Error saving tasks:", err);
-      onClose(false); // fail-safe: indicate tasks not saved
+      console.error('Error saving tasks:', err);
+      onClose(false);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleTryAgain = () => {
-    onClose(false); // just close, no save
-  };
-
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ width: 500, maxWidth: '90%', backgroundColor: 'white', borderRadius: 16, padding: 24, maxHeight: '80%' }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12 }}>Confirm Extracted Tasks</Text>
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }]}>
+        <View
+          style={{
+            width: 500,
+            maxWidth: '90%',
+            backgroundColor: colors.surface,
+            borderRadius: 16,
+            padding: 24,
+            maxHeight: '80%',
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: colors.textPrimary }}>
+            Confirm Extracted Tasks
+          </Text>
 
           <ScrollView style={{ marginBottom: 12 }}>
             {tasks.map((task, index) => (
               <TaskItem
                 key={index}
                 task={task}
-                onUpdate={(updatedTask) => handleUpdateTask(index, updatedTask)}
-                onDelete={() => handleDeleteTask(index)}
+                onUpdate={(updated) => handleUpdate(index, updated)}
+                onDelete={() => handleDelete(index)}
               />
             ))}
           </ScrollView>
 
-          <StandardButton
+          <Button
             title="Add Task"
-            onPress={handleAddTask}
-            bgColor="bg-blue-600"
-            textColor="text-white"
+            onPress={() => setTasks((prev) => [...prev, { title: '', description: '', dueDate: null }])}
+            variant="info"
+            fullWidth
+            style={{ marginBottom: 12 }}
           />
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
-            <StandardButton
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button
               title="Confirm"
               onPress={handleConfirm}
-              bgColor="bg-green-700"
-              textColor="text-white"
+              variant="success"
               disabled={saving}
+              style={{ flex: 1 }}
             />
-            <StandardButton
+            <Button
               title="Try Again"
-              onPress={handleTryAgain}
-              bgColor="bg-gray-200"
-              textColor="text-gray-800"
+              onPress={() => onClose(false)}
+              variant="secondary"
               disabled={saving}
+              style={{ flex: 1 }}
             />
           </View>
-            <LoadingModal
-                visible={saving}
-                message="Uploading tasks..."
-                onCancel={() => {
-                    setSaving(false);
-                }}
-            />
+
+          <LoadingModal visible={saving} message="Saving tasks…" onCancel={() => setSaving(false)} />
         </View>
       </View>
     </Modal>

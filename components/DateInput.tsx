@@ -2,13 +2,15 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
+import { useTheme } from '@/theme/ThemeContext';
 
-type DateInputProps = {
+type Props = {
   value: Date | null;
   onChange: (date: Date | null) => void;
 };
 
-export function DateInput({ value, onChange }: DateInputProps) {
+export function DateInput({ value, onChange }: Props) {
+  const { colors } = useTheme();
   const [visible, setVisible] = useState(false);
 
   return (
@@ -20,44 +22,35 @@ export function DateInput({ value, onChange }: DateInputProps) {
           alignItems: 'center',
           gap: 6,
           borderWidth: 1,
-          borderColor: '#d1d5db',
+          borderColor: colors.inputBorder,
           borderRadius: 8,
           paddingHorizontal: 10,
           paddingVertical: 8,
+          backgroundColor: colors.inputBackground,
         }}
       >
-        <MaterialIcons name="calendar-today" size={14} color="#6b7280" />
-        <Text style={{ fontSize: 13, color: value ? '#111827' : '#9ca3af', flex: 1 }}>
+        <MaterialIcons name="calendar-today" size={14} color={colors.textMuted} />
+        <Text style={{ fontSize: 13, color: value ? colors.textPrimary : colors.inputPlaceholder, flex: 1 }}>
           {value ? value.toISOString().split('T')[0] : 'Due date (optional)'}
         </Text>
         {value && (
           <TouchableOpacity onPress={() => onChange(null)} hitSlop={8}>
-            <MaterialIcons name="close" size={14} color="#9ca3af" />
+            <MaterialIcons name="close" size={14} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
 
-        <DatePickerModal
+      <DatePickerModal
         locale="en"
         mode="single"
         visible={visible}
         date={value || new Date()}
         onDismiss={() => setVisible(false)}
         onConfirm={(params) => {
-        setVisible(false);
-
-        // params.date is CalendarDate | undefined, NOT Date
-        const calDate = params.date; 
-        let pickedDate: Date | null = null;
-
-        if (calDate) {
-            // CalendarDate has year, month, day
-            pickedDate = calDate; 
-        }
-
-        onChange(pickedDate); // pickedDate is Date | null
+          setVisible(false);
+          onChange(params.date ?? null);
         }}
-        />
+      />
     </View>
   );
 }

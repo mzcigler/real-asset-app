@@ -1,18 +1,21 @@
 import { DateInput } from '@/components/DateInput';
 import { useState } from 'react';
-import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { LoadingModal } from './LoadingModal';
-
-type Property = { id: string; name: string };
+import Button from './Button';
+import { useTheme } from '@/theme/ThemeContext';
+import { Property } from '@/types';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   onAdd: (title: string, description: string, dueDate: Date | null, propertyId?: string) => Promise<void>;
+  /** When provided, shows a property selector (used from dashboard) */
   properties?: Property[];
 };
 
 export default function AddTaskModal({ visible, onClose, onAdd, properties }: Props) {
+  const { colors } = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
@@ -26,103 +29,118 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
     setSaving(true);
     try {
       await onAdd(title.trim(), description.trim(), dueDate, selectedPropertyId ?? undefined);
-      setTitle('');
-      setDescription('');
-      setDueDate(null);
-      setSelectedPropertyId(null);
+      reset();
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
+  const reset = () => {
     setTitle('');
     setDescription('');
     setDueDate(null);
     setSelectedPropertyId(null);
+  };
+
+  const handleCancel = () => {
+    reset();
     onClose();
   };
 
   return (
     <>
-    <LoadingModal visible={saving} message="Saving task..." />
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={handleCancel}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ width: 340, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
-          <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 14 }}>New Task</Text>
+      <LoadingModal visible={saving} message="Saving task…" />
+      <Modal transparent visible={visible} animationType="fade" onRequestClose={handleCancel}>
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }]}>
+          <View style={{ width: 340, backgroundColor: colors.surface, borderRadius: 16, padding: 24 }}>
+            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 14, color: colors.textPrimary }}>
+              New Task
+            </Text>
 
-          {properties && (
-            <>
-              <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Property *</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {properties.map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      onPress={() => setSelectedPropertyId(p.id)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        borderRadius: 20,
-                        borderWidth: 1,
-                        borderColor: selectedPropertyId === p.id ? '#15803d' : '#d1d5db',
-                        backgroundColor: selectedPropertyId === p.id ? '#f0fdf4' : 'white',
-                      }}
-                    >
-                      <Text style={{ fontSize: 13, color: selectedPropertyId === p.id ? '#15803d' : '#374151', fontWeight: selectedPropertyId === p.id ? '600' : '400' }}>
-                        {p.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </>
-          )}
+            {/* Property selector (dashboard only) */}
+            {properties && (
+              <>
+                <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 4 }}>Property *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {properties.map((p) => {
+                      const isSelected = selectedPropertyId === p.id;
+                      return (
+                        <TouchableOpacity
+                          key={p.id}
+                          onPress={() => setSelectedPropertyId(p.id)}
+                          style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 20,
+                            borderWidth: 1,
+                            borderColor: isSelected ? colors.success : colors.border,
+                            backgroundColor: isSelected ? colors.successLight : colors.surface,
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 13,
+                            color: isSelected ? colors.success : colors.textSecondary,
+                            fontWeight: isSelected ? '600' : '400',
+                          }}>
+                            {p.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </>
+            )}
 
-          <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Title *</Text>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Task title"
-            autoFocus
-            style={{ borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 14, marginBottom: 12 }}
-          />
-
-          <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Description</Text>
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Optional"
-            multiline
-            style={{ borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 14, marginBottom: 12, minHeight: 60 }}
-          />
-
-          <DateInput value={dueDate} onChange={setDueDate} />
-
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-            <TouchableOpacity
-              onPress={handleAdd}
-              disabled={saving || !canSubmit}
+            <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 4 }}>Title *</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Task title"
+              placeholderTextColor={colors.inputPlaceholder}
+              autoFocus
               style={{
-                flex: 1,
-                backgroundColor: saving || !canSubmit ? '#d1d5db' : '#15803d',
-                borderRadius: 8,
-                paddingVertical: 11,
-                alignItems: 'center',
+                borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8,
+                padding: 10, fontSize: 14, marginBottom: 12,
+                color: colors.textPrimary, backgroundColor: colors.inputBackground,
               }}
-            >
-              <Text style={{ color: 'white', fontWeight: '600' }}>{saving ? 'Saving...' : 'Add'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleCancel}
-              style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 11, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#374151' }}>Cancel</Text>
-            </TouchableOpacity>
+            />
+
+            <Text style={{ fontSize: 13, color: colors.textMuted, marginBottom: 4 }}>Description</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional"
+              placeholderTextColor={colors.inputPlaceholder}
+              multiline
+              style={{
+                borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8,
+                padding: 10, fontSize: 14, marginBottom: 12, minHeight: 60,
+                color: colors.textPrimary, backgroundColor: colors.inputBackground,
+              }}
+            />
+
+            <DateInput value={dueDate} onChange={setDueDate} />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <Button
+                title={saving ? 'Saving…' : 'Add'}
+                onPress={handleAdd}
+                variant="success"
+                disabled={saving || !canSubmit}
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Cancel"
+                onPress={handleCancel}
+                variant="secondary"
+                style={{ flex: 1 }}
+              />
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
     </>
   );
 }

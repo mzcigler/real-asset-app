@@ -1,7 +1,10 @@
 import { supabase } from '@/lib/supabase';
+import { useTheme } from '@/theme/ThemeContext';
 import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
+
+const INPUT_HEIGHT = 40;
 
 type PropertyDropdownProps = {
   userId: string;
@@ -9,64 +12,66 @@ type PropertyDropdownProps = {
   onSelect: (propertyId: string | null) => void;
 };
 
-export default function PropertyDropdown({
-  userId,
-  selectedProperty,
-  onSelect,
-}: PropertyDropdownProps) {
+export default function PropertyDropdown({ userId, selectedProperty, onSelect }: PropertyDropdownProps) {
+  const { colors } = useTheme();
   const [properties, setProperties] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('id, name')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error("Error fetching properties:", error);
-      } else {
-        setProperties(data || []);
-      }
-    };
-
-    fetchProperties();
+    supabase
+      .from('properties')
+      .select('id, name')
+      .eq('user_id', userId)
+      .then(({ data, error }) => {
+        if (!error) setProperties(data || []);
+      });
   }, [userId]);
 
   return (
     <>
-      <Text style={{ fontWeight: 'bold', marginTop: 6, marginBottom: 6 }}>
+      <Text
+        style={{
+          fontWeight: '600',
+          marginTop: 6,
+          marginBottom: 6,
+          color: colors.textPrimary,
+        }}
+      >
         Select Property:
       </Text>
 
       <View
         style={{
           borderWidth: 1,
-          borderColor: '#ccc',
+          borderColor: colors.inputBorder,
           borderRadius: 12,
           overflow: 'hidden',
           marginBottom: 12,
-          backgroundColor: 'white',
+          backgroundColor: colors.inputBackground,
+          height: INPUT_HEIGHT,
+          justifyContent: 'center',
         }}
       >
         <Picker
+          selectedValue={selectedProperty ?? ''}
+          onValueChange={(itemValue: string) => onSelect(itemValue || null)}
           style={{
-            height: 50, // make it "fatter"
-            paddingHorizontal: 12,
+            color: colors.textPrimary,       // text color for both themes
+            height: INPUT_HEIGHT,             // match container
+            paddingHorizontal: 12,            // padding inside picker
+            backgroundColor: colors.inputBackground,
+            ...Platform.select({
+              ios: { paddingVertical: 0 },    // iOS tweaks
+              android: {},                     // Android uses paddingHorizontal
+            }),
           }}
           itemStyle={{
-            fontSize: 16, // slightly larger text
+            fontSize: 14,
+            color: colors.textPrimary,        // ensures text matches theme
           }}
-            selectedValue={selectedProperty ?? ""}
-            onValueChange={(itemValue: string) => onSelect(itemValue || null)}
         >
           <Picker.Item label="Select a property..." value="" />
           {properties.map((prop) => (
-            <Picker.Item
-              key={prop.id}
-              label={prop.name}
-              value={prop.id}
-            />
+            <Picker.Item key={prop.id} label={prop.name} value={prop.id} />
           ))}
         </Picker>
       </View>

@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
-import { colors } from './styles/theme';
+import { useTheme } from '@/theme/ThemeContext';
 
-type InfoPopupProps = {
+type PopupType = 'warning' | 'error' | 'success';
+
+type Props = {
   visible: boolean;
-  type?: 'warning' | 'error' | 'success'; // new: style type
+  type?: PopupType;
   title?: string;
   message: string;
   onClose: () => void;
@@ -28,56 +30,66 @@ export default function InfoPopup({
   onConfirm,
   autoDismiss,
   dismissOnBackdropPress = true,
-}: InfoPopupProps) {
+}: Props) {
+  const { colors } = useTheme();
+
   useEffect(() => {
     if (visible && autoDismiss) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, autoDismiss);
+      const timer = setTimeout(onClose, autoDismiss);
       return () => clearTimeout(timer);
     }
   }, [visible, autoDismiss]);
 
+  const titleColor =
+    type === 'success' ? colors.success :
+    type === 'warning' ? colors.warning :
+    colors.danger;
+
+  const confirmBg =
+    type === 'success' ? colors.success :
+    type === 'warning' ? colors.warning :
+    colors.danger;
+
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      {/* Backdrop */}
       <Pressable
-        className="flex-1 justify-center items-center bg-black/40 p-4"
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.overlay, padding: 16 }}
         onPress={dismissOnBackdropPress ? onClose : undefined}
       >
-        {/* Popup container */}
-        <View className="bg-white rounded-xl p-6 w-full max-w-xs shadow-md">
-          {/* Title */}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 12,
+            padding: 24,
+            width: '100%',
+            maxWidth: 320,
+          }}
+        >
           {title && (
-            <Text className={`text-xl font-bold mb-3 text-center ${colors[`${type}Title`]}`}>
+            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center', color: titleColor }}>
               {title}
             </Text>
           )}
 
-          {/* Message */}
-          <Text className={`text-base mb-6 text-center ${colors[`${type}Text`]}`}>
+          <Text style={{ fontSize: 15, marginBottom: 20, textAlign: 'center', color: colors.textSecondary, lineHeight: 22 }}>
             {message}
           </Text>
 
-          {/* Buttons */}
-          <View className="flex-col space-y-3">
+          <View style={{ gap: 10 }}>
             {cancelText && (
               <TouchableOpacity
-                className="px-4 py-3 rounded-lg bg-gray-200"
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: colors.borderLight, alignItems: 'center' }}
                 onPress={onClose}
               >
-                <Text className="text-gray-800 font-semibold text-center">{cancelText}</Text>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{cancelText}</Text>
               </TouchableOpacity>
             )}
             {showConfirm && (
               <TouchableOpacity
-                className={`px-4 py-3 rounded-lg ${colors[`${type}Text`]}`}
-                onPress={() => {
-                  onConfirm?.();
-                  onClose();
-                }}
+                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: confirmBg, alignItems: 'center' }}
+                onPress={() => { onConfirm?.(); onClose(); }}
               >
-                <Text className="text-white font-semibold text-center">{confirmText}</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>{confirmText}</Text>
               </TouchableOpacity>
             )}
           </View>

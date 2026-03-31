@@ -1,39 +1,44 @@
-import { StandardButton } from '@/components/Buttons';
+import Button from '@/components/Button';
 import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
+import PageContainer from '@/components/PageContainer';
 import PhoneInput from '@/components/PhoneInput';
+import { supabase } from '@/lib/supabase';
+import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import ScreenWrapper from '../../components/ScreenWrapper';
-import { supabase } from '../../lib/supabase';
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [areaCode, setAreaCode] = useState('+1');
+  const [loading, setLoading] = useState(true);
+
+  // Popup state
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [popupTitle, setPopupTitle] = useState('');
   const [popupType, setPopupType] = useState<'error' | 'success' | 'warning'>('success');
-  const [loading, setLoading] = useState(true);
 
-  const router = useRouter();
+  const showPopup = (type: typeof popupType, title: string, message: string) => {
+    setPopupType(type);
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setPopupVisible(true);
+  };
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) { router.replace('/(auth)/login'); return; }
 
-      setEmail(data.user?.email ?? '');
-
-      if (!data.user) {
-        router.replace('/(auth)/login');
-        return;
-      }
-
+      setEmail(data.user.email ?? '');
       setUserId(data.user.id);
 
       const { data: profile } = await supabase
@@ -45,7 +50,6 @@ export default function ProfileScreen() {
       if (profile) {
         setFirstName(profile.first_name ?? '');
         setLastName(profile.surname ?? '');
-
         if (profile.phone) {
           if (profile.phone.startsWith('+1')) {
             setAreaCode('+1');
@@ -55,106 +59,91 @@ export default function ProfileScreen() {
           }
         }
       }
-
       setLoading(false);
-    };
-
-    getUser();
+    });
   }, []);
 
-  // 🔹 Save updates
   const handleSave = async () => {
     if (!userId) return;
-
     const { error } = await supabase.from('profiles').upsert({
       id: userId,
       first_name: firstName,
       surname: lastName,
       phone: phone ? `${areaCode}${phone}` : '',
     });
-
     if (error) {
-      setPopupType('error');
-      setPopupTitle('Update Failed');
-      setPopupMessage(error.message)
-      setPopupVisible(true);
-      return;
+      showPopup('error', 'Update Failed', error.message);
+    } else {
+      showPopup('success', 'Saved', 'Profile updated successfully.');
     }
-
-    setPopupType('success');
-    setPopupTitle('Success');
-    setPopupMessage('Profile updated!');
-    setPopupVisible(true);
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) return alert(error.message);
+    await supabase.auth.signOut();
     router.replace('/(auth)/login');
   };
 
   if (loading) {
     return (
-      <ScreenWrapper>
-        <ActivityIndicator size="large" color="#10B981" style={{ marginTop: 40 }} />
-      </ScreenWrapper>
+      <PageContainer>
+        <ActivityIndicator size="large" color={colors.success} style={{ marginTop: 40 }} />
+      </PageContainer>
     );
   }
 
   return (
-    <ScreenWrapper>
-      <Text className="text-2xl font-bold mb-4">My Profile</Text>
+    <PageContainer>
+      <Text style={{ fontSize: 26, fontWeight: 'bold', marginBottom: 16, color: colors.textPrimary }}>
+        My Profile
+      </Text>
 
-      <Text className="mb-4 font-bold">Email: {email}</Text>
-      {/* First + Last Name */}
-      <View className="flex-row w-full max-w-xs mb-3 space-x-2">
+      <Text style={{ marginBottom: 12, fontWeight: '600', color: colors.textSecondary }}>
+        Email: {email}
+      </Text>
+
+      <View style={{ flexDirection: 'row', width: '100%', gap: 8, marginBottom: 12 }}>
         <SingleLineInput
           placeholderText="First Name"
           value={firstName}
           onChangeText={setFirstName}
-          customStyle="flex-1"
+          style={{ flex: 1, marginBottom: 0 }}
         />
         <SingleLineInput
           placeholderText="Last Name"
           value={lastName}
           onChangeText={setLastName}
-          customStyle="flex-1"
+          style={{ flex: 1, marginBottom: 0 }}
         />
       </View>
 
-      {/* Phone */}
       <PhoneInput
         areaCode={areaCode}
         setAreaCode={setAreaCode}
         phone={phone}
         setPhone={setPhone}
       />
-      <StandardButton
+
+      <Button
         title="Save Changes"
         onPress={handleSave}
-        bgColor="bg-green-600"
-        textColor="text-white"
-        fontWeight="font-bold"
-        customStyle="w-full max-w-xs"
+        variant="success"
+        fullWidth
+        style={{ marginBottom: 10 }}
       />
-
-      <StandardButton
+      <Button
         title="Change Password"
-        onPress={() => router.push('/(auth)/change-password')}
-        bgColor="bg-gray-700"
-        textColor="text-white"
-        fontWeight="font-semibold"
-        customStyle="w-full max-w-xs"
+        onPress={() => router.push('/(auth)/change-password' as any)}
+        variant="secondary"
+        fullWidth
+        style={{ marginBottom: 10 }}
       />
-
-      <StandardButton
+      <Button
         title="Logout"
         onPress={handleLogout}
-        bgColor="bg-red-600"
-        textColor="text-white"
-        fontWeight="font-semibold"
-        customStyle="w-full max-w-xs"
+        variant="danger"
+        fullWidth
       />
+
       <InfoPopup
         visible={popupVisible}
         message={popupMessage}
@@ -165,6 +154,6 @@ export default function ProfileScreen() {
         cancelText="Close"
         autoDismiss={3000}
       />
-    </ScreenWrapper>
+    </PageContainer>
   );
 }

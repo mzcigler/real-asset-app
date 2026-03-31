@@ -1,33 +1,37 @@
 import { ActivityIndicator, Modal, Text, View } from 'react-native';
-import { StandardButton } from './Buttons';
+import Button from './Button';
+import { useTheme } from '@/theme/ThemeContext';
 
-
-type LoadingModalProps = {
+type Props = {
   visible: boolean;
   message?: string;
-  onCancel?: () => void; // optional cancel button
+  onCancel?: () => void;
 };
 
-export const LoadingModal = ({ visible, message, onCancel }: LoadingModalProps) => {
+export function LoadingModal({ visible, message, onCancel }: Props) {
+  const { colors } = useTheme();
+
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View className="flex-1 justify-center items-center bg-black/50">
-        <View className="bg-white rounded-xl p-6 w-80 flex items-center">
-          <ActivityIndicator size="large" color="#10B981" /> 
-          <Text className="text-gray-900 text-lg font-semibold mt-4 mb-4 text-center">
-            {message || "Processing..."}
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.overlay }}>
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: 12,
+            padding: 24,
+            width: 280,
+            alignItems: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.success} />
+          <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: onCancel ? 16 : 0, textAlign: 'center' }}>
+            {message || 'Processing…'}
           </Text>
           {onCancel && (
-            <StandardButton
-              title="Cancel" 
-              onPress={onCancel}
-              bgColor="bg-gray-200"
-              textColor="text-black"
-              fontWeight="font-bold"
-            />
+            <Button title="Cancel" onPress={onCancel} variant="secondary" fullWidth />
           )}
         </View>
       </View>
     </Modal>
   );
-};
+}

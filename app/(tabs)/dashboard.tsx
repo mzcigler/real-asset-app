@@ -1,350 +1,266 @@
 import AddPropertyPopup from '@/components/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
-import { StandardButton } from '@/components/Buttons';
+import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
+import FilterChips from '@/components/FilterChips';
+import PageContainer from '@/components/PageContainer';
 import PropertyScrollRow from '@/components/PropertyScrollRow';
+import RenameModal from '@/components/RenameModal';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/UploadExtractPopup';
-import { supabase } from '@/lib/supabase';
+import { useSelectionMode } from '@/hooks/useSelectionMode';
+import { deleteProperties, fetchProperties, renameProperty } from '@/services/propertyService';
+import {
+  createTask,
+  deleteTasks,
+  fetchAllTasksForUser,
+  getOrCreateManualFileId,
+  updateTask,
+} from '@/services/taskService';
+import { useTheme } from '@/theme/ThemeContext';
+import { Property, TaskRow, TaskType } from '@/types';
+import { sortByDueDate, toDateString } from '@/utils/taskUtils';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
-type TaskRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  file_id: string;
-  propertyName: string;
-};
+export default function DashboardScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
 
-type Property = {
-  id: string;
-  name: string;
-};
-
-export default function HomeScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [allTasks, setAllTasks] = useState<TaskRow[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
+
+  // Filter state
+  const [propertyFilter, setPropertyFilter] = useState<string | null>(null);
+  const [fileFilter, setFileFilter] = useState<string | null>(null);
+
+  // Modal visibility
   const [uploadVisible, setUploadVisible] = useState(false);
   const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
+
+  // Rename property
   const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
-  const [renameText, setRenameText] = useState('');
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [taskSelectedIds, setTaskSelectedIds] = useState<string[]>([]);
-  const [taskSelectionMode, setTaskSelectionMode] = useState(false);
+
+  // Delete confirmation targets
+  const [pendingDeletePropertyIds, setPendingDeletePropertyIds] = useState<string[]>([]);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
-  const router = useRouter();
+
+  // Selection modes
+  const propertySel = useSelectionMode();
+  const taskSel = useSelectionMode();
+
+  // ── Data loading ──────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
+    supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace('/(auth)/login'); return; }
       setUserId(data.user.id);
-      fetchProperties(data.user.id);
-      fetchAllTasks(data.user.id);
-    };
-    getUser();
+      loadProperties(data.user.id);
+      loadTasks(data.user.id);
+    });
   }, []);
 
-  const fetchProperties = async (uid: string) => {
+  const loadProperties = async (uid: string) => {
     setLoadingProperties(true);
-    const { data } = await supabase
-      .from('properties')
-      .select('id, name')
-      .eq('user_id', uid)
-      .order('created_at', { ascending: false });
-    setProperties(data || []);
+    setProperties(await fetchProperties(uid));
     setLoadingProperties(false);
   };
 
-  const fetchAllTasks = async (uid: string) => {
+  const loadTasks = async (uid: string) => {
     setLoadingTasks(true);
-    const { data: propData } = await supabase
-      .from('properties')
-      .select('id, name')
-      .eq('user_id', uid);
-
-    if (!propData || propData.length === 0) {
-      setAllTasks([]);
-      setLoadingTasks(false);
-      return;
-    }
-
-    const propMap = Object.fromEntries(propData.map((p) => [p.id, p.name]));
-
-    const { data: fileData } = await supabase
-      .from('files')
-      .select('id, property_id')
-      .in('property_id', propData.map((p) => p.id));
-
-    if (!fileData || fileData.length === 0) {
-      setAllTasks([]);
-      setLoadingTasks(false);
-      return;
-    }
-
-    const fileToProperty = Object.fromEntries(fileData.map((f) => [f.id, f.property_id]));
-
-    const { data: taskData } = await supabase
-      .from('tasks')
-      .select('id, title, description, due_date, file_id')
-      .in('file_id', fileData.map((f) => f.id));
-
-    const tasks: TaskRow[] = (taskData || []).map((t) => ({
-      ...t,
-      propertyName: propMap[fileToProperty[t.file_id]] || '',
-    }));
-
-    tasks.sort((a, b) => {
-      if (!a.due_date && !b.due_date) return 0;
-      if (!a.due_date) return 1;
-      if (!b.due_date) return -1;
-      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-    });
-
-    setAllTasks(tasks);
+    setAllTasks(await fetchAllTasksForUser(uid));
     setLoadingTasks(false);
   };
 
-  const handleUpdateTask = async (taskId: string, updated: import('@/components/types').TaskType) => {
-    const dueDateStr = updated.dueDate ? updated.dueDate.toISOString().slice(0, 10) : null;
-    const { error } = await supabase
-      .from('tasks')
-      .update({ title: updated.title, description: updated.description ?? null, due_date: dueDateStr })
-      .eq('id', taskId);
-    if (!error) {
-      setAllTasks((prev) =>
-        [...prev.map((t) =>
-          t.id === taskId
-            ? { ...t, title: updated.title, description: updated.description ?? null, due_date: dueDateStr }
-            : t
-        )].sort((a, b) => {
-          if (!a.due_date && !b.due_date) return 0;
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-        })
-      );
-    }
+  // ── Property filter resets file filter ────────────────────────────────────
+
+  const handlePropertyFilterSelect = (v: string | null) => {
+    setPropertyFilter(v);
+    setFileFilter(null);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    setPendingDeleteTaskIds([taskId]);
+  // ── Property actions ──────────────────────────────────────────────────────
+
+  const handleRenameConfirm = async (newName: string) => {
+    if (!renamingProperty) return;
+    await renameProperty(renamingProperty.id, newName);
+    setProperties((prev) => prev.map((p) => p.id === renamingProperty.id ? { ...p, name: newName } : p));
+    setRenamingProperty(null);
   };
 
-  const handleDeleteTasksConfirm = async () => {
-    if (pendingDeleteTaskIds.length === 0) return;
-    await supabase.from('tasks').delete().in('id', pendingDeleteTaskIds);
-    setAllTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
-    setPendingDeleteTaskIds([]);
-    setTaskSelectedIds([]);
-    setTaskSelectionMode(false);
+  const handleDeletePropertiesConfirm = async () => {
+    await deleteProperties(pendingDeletePropertyIds);
+    setProperties((prev) => prev.filter((p) => !pendingDeletePropertyIds.includes(p.id)));
+    setPendingDeletePropertyIds([]);
+    propertySel.cancel();
   };
 
-  const handleEnterTaskSelectionMode = (id: string) => {
-    setTaskSelectionMode(true);
-    setTaskSelectedIds([id]);
-  };
-
-  const handleToggleTaskSelect = (id: string) => {
-    setTaskSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const handleCancelTaskSelection = () => {
-    setTaskSelectionMode(false);
-    setTaskSelectedIds([]);
-  };
+  // ── Task actions ──────────────────────────────────────────────────────────
 
   const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string) => {
     if (!propertyId) return;
-    const { data: existing } = await supabase.from('files').select('id').eq('property_id', propertyId).eq('file_name', '__manual__').maybeSingle();
-    let fileId = existing?.id;
-    if (!fileId) {
-      const { data: created } = await supabase.from('files').insert({ property_id: propertyId, file_name: '__manual__', file_path: '' }).select('id').single();
-      fileId = created?.id;
-    }
-    if (!fileId) throw new Error('Could not get file id');
-    const dueDateStr = dueDate ? dueDate.toISOString().slice(0, 10) : null;
-    const { data, error } = await supabase.from('tasks').insert({ file_id: fileId, title, description: description || null, due_date: dueDateStr }).select('id, title, description, due_date, file_id').single();
-    if (error) throw error;
+    const fileId = await getOrCreateManualFileId(propertyId);
+    const newTask = await createTask(fileId, title, description || null, dueDate);
     const propertyName = properties.find((p) => p.id === propertyId)?.name || '';
-    setAllTasks((prev) =>
-      [...prev, { ...data, propertyName }].sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      })
-    );
+    setAllTasks((prev) => sortByDueDate([...prev, { ...newTask, propertyName, fileName: '__manual__' }]));
     setAddTaskVisible(false);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (pendingDeleteIds.length === 0) return;
-    await supabase.from('properties').delete().in('id', pendingDeleteIds);
-    setProperties((prev) => prev.filter((p) => !pendingDeleteIds.includes(p.id)));
-    setPendingDeleteIds([]);
-    setSelectedIds([]);
-    setSelectionMode(false);
-  };
-
-  const handleEnterSelectionMode = (id: string) => {
-    setSelectionMode(true);
-    setSelectedIds([id]);
-  };
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+  const handleUpdateTask = async (taskId: string, updated: TaskType) => {
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null);
+    setAllTasks((prev) =>
+      sortByDueDate(prev.map((t) =>
+        t.id === taskId
+          ? { ...t, title: updated.title, description: updated.description ?? null, due_date: toDateString(updated.dueDate ?? null) }
+          : t,
+      )),
     );
   };
 
-  const handleCancelSelection = () => {
-    setSelectionMode(false);
-    setSelectedIds([]);
+  const handleDeleteTasksConfirm = async () => {
+    await deleteTasks(pendingDeleteTaskIds);
+    setAllTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
+    setPendingDeleteTaskIds([]);
+    taskSel.cancel();
   };
 
-  const handleRenameConfirm = async () => {
-    if (!renamingProperty || !renameText.trim()) return;
-    const { error } = await supabase
-      .from('properties')
-      .update({ name: renameText.trim() })
-      .eq('id', renamingProperty.id);
+  // ── Derived filter values ─────────────────────────────────────────────────
 
-    if (!error) {
-      setProperties((prev) =>
-        prev.map((p) => (p.id === renamingProperty.id ? { ...p, name: renameText.trim() } : p))
-      );
-    }
-    setRenamingProperty(null);
-    setRenameText('');
-  };
+  const tasksFilteredByProperty = propertyFilter
+    ? allTasks.filter((t) => t.propertyName === propertyFilter)
+    : allTasks;
+
+  const displayedTasks = fileFilter
+    ? tasksFilteredByProperty.filter((t) => t.file_id === fileFilter)
+    : tasksFilteredByProperty;
+
+  // Unique files for the currently selected property (for file filter chips)
+  const filesForProperty: { id: string; name: string }[] = propertyFilter
+    ? Array.from(
+        new Map(
+          tasksFilteredByProperty
+            .filter((t) => t.file_id)
+            .map((t) => [t.file_id, { id: t.file_id, name: t.fileName }]),
+        ).values(),
+      )
+    : [];
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const pendingDeletePropertyName = properties.find((p) => p.id === pendingDeletePropertyIds[0])?.name;
+  const pendingDeleteTaskTitle = allTasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f3f4f6' }} contentContainerStyle={{ alignItems: 'center', padding: 24 }}>
-      <View style={{ width: '100%', maxWidth: 480 }}>
-
-        <Text style={{ fontSize: 26, fontWeight: 'bold', marginBottom: 16 }}>My Dashboard</Text>
-
-        <StandardButton
-          title="Upload New Document"
+    <PageContainer>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={{ fontSize: 26, fontWeight: 'bold', flex: 1, color: colors.textPrimary }}>
+          My Dashboard
+        </Text>
+        <TouchableOpacity
           onPress={() => setUploadVisible(true)}
-          bgColor="bg-white"
-          textColor="text-black"
-          fontWeight="font-semibold"
-          customStyle="border border-blue-600 w-full"
-        />
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', flex: 1 }}>My Properties</Text>
-          {selectionMode ? (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                onPress={handleCancelSelection}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#f3f4f6' }}
-              >
-                <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => { if (selectedIds.length > 0) setPendingDeleteIds(selectedIds); }}
-                disabled={selectedIds.length === 0}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: selectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
-              >
-                <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>Delete {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setAddPropertyVisible(true)}
-              style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <MaterialIcons name="add" size={20} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-        {loadingProperties ? (
-          <ActivityIndicator size="small" color="#10B981" style={{ marginVertical: 12 }} />
-        ) : properties.length === 0 ? (
-          <Text style={{ color: '#6b7280', marginBottom: 8 }}>No properties yet.</Text>
-        ) : (
-          <PropertyScrollRow
-            properties={properties}
-            onPress={(id) => router.push(`/(tabs)/property/${id}` as any)}
-            onRename={(property) => { setRenameText(property.name); setRenamingProperty(property); }}
-            onDelete={(property) => setPendingDeleteIds([property.id])}
-            selectedIds={selectedIds}
-            selectionMode={selectionMode}
-            onToggleSelect={handleToggleSelect}
-            onEnterSelectionMode={handleEnterSelectionMode}
-          />
-        )}
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', flex: 1 }}>Upcoming Tasks</Text>
-          {taskSelectionMode ? (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity
-                onPress={handleCancelTaskSelection}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#f3f4f6' }}
-              >
-                <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => { if (taskSelectedIds.length > 0) setPendingDeleteTaskIds(taskSelectedIds); }}
-                disabled={taskSelectedIds.length === 0}
-                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: taskSelectedIds.length > 0 ? '#dc2626' : '#fca5a5' }}
-              >
-                <Text style={{ fontSize: 13, color: 'white', fontWeight: '600' }}>Delete {taskSelectedIds.length > 0 ? `(${taskSelectedIds.length})` : ''}</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setAddTaskVisible(true)}
-              style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#15803d', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <MaterialIcons name="add" size={20} color="white" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {loadingTasks ? (
-          <ActivityIndicator size="small" color="#10B981" style={{ marginVertical: 12 }} />
-        ) : allTasks.length > 0 ? (
-          <>
-            {allTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={{
-                  id: task.id,
-                  title: task.title,
-                  description: task.description ?? undefined,
-                  dueDate: task.due_date ? new Date(task.due_date) : null,
-                }}
-                propertyName={task.propertyName}
-                onUpdate={(updated) => handleUpdateTask(task.id, updated)}
-                onDelete={() => handleDeleteTask(task.id)}
-                selected={taskSelectedIds.includes(task.id)}
-                selectionMode={taskSelectionMode}
-                onLongPress={() => taskSelectionMode ? handleToggleTaskSelect(task.id) : handleEnterTaskSelectionMode(task.id)}
-              />
-            ))}
-          </>
-        ) : (
-          <Text style={{ color: '#6b7280', marginBottom: 8 }}>No upcoming tasks.</Text>
-        )}
-
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.primary }}
+        >
+          <MaterialIcons name="cloud-upload" size={16} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Upload Doc</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* ── My Properties ──────────────────────────────────────────────── */}
+      <SectionHeader
+        title="My Properties"
+        selectionMode={propertySel.selectionMode}
+        selectedCount={propertySel.selectedIds.length}
+        onAdd={() => setAddPropertyVisible(true)}
+        onCancelSelection={propertySel.cancel}
+        onDeleteSelected={() => {
+          if (propertySel.selectedIds.length > 0) setPendingDeletePropertyIds(propertySel.selectedIds);
+        }}
+      />
+
+      {loadingProperties ? (
+        <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
+      ) : properties.length === 0 ? (
+        <Text style={{ color: colors.textMuted, marginBottom: 8 }}>No properties yet.</Text>
+      ) : (
+        <PropertyScrollRow
+          properties={properties}
+          onPress={(id) => router.push(`/(tabs)/property/${id}` as any)}
+          onRename={(property) => setRenamingProperty(property)}
+          onDelete={(property) => setPendingDeletePropertyIds([property.id])}
+          selectedIds={propertySel.selectedIds}
+          selectionMode={propertySel.selectionMode}
+          onToggleSelect={propertySel.toggle}
+          onEnterSelectionMode={propertySel.enter}
+        />
+      )}
+
+      {/* ── Upcoming Tasks ─────────────────────────────────────────────── */}
+      <SectionHeader
+        title="Upcoming Tasks"
+        selectionMode={taskSel.selectionMode}
+        selectedCount={taskSel.selectedIds.length}
+        onAdd={() => setAddTaskVisible(true)}
+        onCancelSelection={taskSel.cancel}
+        onDeleteSelected={() => {
+          if (taskSel.selectedIds.length > 0) setPendingDeleteTaskIds(taskSel.selectedIds);
+        }}
+      />
+
+      {/* Property filter chips */}
+      {!loadingTasks && properties.length > 0 && (
+        <FilterChips
+          options={[
+            { label: 'All', value: null },
+            ...properties.map((p) => ({ label: p.name, value: p.name })),
+          ]}
+          selected={propertyFilter}
+          onSelect={handlePropertyFilterSelect}
+        />
+      )}
+
+      {/* File filter chips — only when a property is selected and it has >1 unique files */}
+      {!loadingTasks && propertyFilter !== null && filesForProperty.length > 1 && (
+        <FilterChips
+          options={[
+            { label: 'All files', value: null },
+            ...filesForProperty.map((f) => ({
+              label: f.name === '__manual__' ? 'Manual' : f.name,
+              value: f.id,
+            })),
+          ]}
+          selected={fileFilter}
+          onSelect={setFileFilter}
+        />
+      )}
+
+      {loadingTasks ? (
+        <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
+      ) : displayedTasks.length === 0 ? (
+        <Text style={{ color: colors.textMuted, marginBottom: 8 }}>No upcoming tasks.</Text>
+      ) : (
+        displayedTasks.map((task) => (
+          <TaskItem
+            key={task.id}
+            task={{ id: task.id, title: task.title, description: task.description ?? undefined, dueDate: task.due_date ? new Date(task.due_date) : null }}
+            propertyName={task.propertyName}
+            onUpdate={(updated) => handleUpdateTask(task.id, updated)}
+            onDelete={() => setPendingDeleteTaskIds([task.id])}
+            selected={taskSel.selectedIds.includes(task.id)}
+            selectionMode={taskSel.selectionMode}
+            onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
+          />
+        ))
+      )}
+
+      {/* ── Modals ─────────────────────────────────────────────────────── */}
       <AddTaskModal
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
@@ -357,116 +273,90 @@ export default function HomeScreen() {
         userId={userId!}
         onClose={() => setUploadVisible(false)}
       />
+
       <AddPropertyPopup
         visible={addPropertyVisible}
         onClose={() => setAddPropertyVisible(false)}
-        onPropertyAdded={() => { if (userId) fetchProperties(userId); }}
+        onPropertyAdded={() => { if (userId) loadProperties(userId); }}
       />
 
-      {/* Delete confirmation modal */}
-      <Modal
-        transparent
-        visible={pendingDeleteIds.length > 0}
-        animationType="fade"
-        onRequestClose={() => setPendingDeleteIds([])}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8 }}>
-              {pendingDeleteIds.length === 1 ? 'Delete Property' : `Delete ${pendingDeleteIds.length} Properties`}
-            </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-              {pendingDeleteIds.length === 1
-                ? `Are you sure you want to delete "${properties.find(p => p.id === pendingDeleteIds[0])?.name}"? This cannot be undone.`
-                : `Are you sure you want to delete ${pendingDeleteIds.length} properties? This cannot be undone.`}
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                onPress={handleDeleteConfirm}
-                style={{ flex: 1, backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Delete</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setPendingDeleteIds([])}
-                style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#374151' }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Task delete confirmation modal */}
-      <Modal
-        transparent
-        visible={pendingDeleteTaskIds.length > 0}
-        animationType="fade"
-        onRequestClose={() => setPendingDeleteTaskIds([])}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8 }}>
-              {pendingDeleteTaskIds.length === 1 ? 'Delete Task' : `Delete ${pendingDeleteTaskIds.length} Tasks`}
-            </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 20 }}>
-              {pendingDeleteTaskIds.length === 1
-                ? `Are you sure you want to delete "${allTasks.find(t => t.id === pendingDeleteTaskIds[0])?.title}"? This cannot be undone.`
-                : `Are you sure you want to delete ${pendingDeleteTaskIds.length} tasks? This cannot be undone.`}
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                onPress={handleDeleteTasksConfirm}
-                style={{ flex: 1, backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Delete</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setPendingDeleteTaskIds([])}
-                style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#374151' }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Rename modal */}
-      <Modal
-        transparent
+      <RenameModal
         visible={!!renamingProperty}
-        animationType="fade"
-        onRequestClose={() => setRenamingProperty(null)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ width: 320, backgroundColor: 'white', borderRadius: 16, padding: 24 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 14 }}>Rename Property</Text>
-            <TextInput
-              value={renameText}
-              onChangeText={setRenameText}
-              autoFocus
-              style={{ borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10, fontSize: 15, marginBottom: 16 }}
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                onPress={handleRenameConfirm}
-                disabled={!renameText.trim()}
-                style={{ flex: 1, backgroundColor: renameText.trim() ? '#2563eb' : '#d1d5db', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: 'white', fontWeight: '600' }}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => { setRenamingProperty(null); setRenameText(''); }}
-                style={{ flex: 1, backgroundColor: '#f3f4f6', borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
-              >
-                <Text style={{ color: '#374151' }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        title="Rename Property"
+        initialValue={renamingProperty?.name ?? ''}
+        onSave={handleRenameConfirm}
+        onClose={() => setRenamingProperty(null)}
+      />
+
+      <ConfirmDeleteModal
+        visible={pendingDeletePropertyIds.length > 0}
+        title={pendingDeletePropertyIds.length === 1 ? 'Delete Property' : `Delete ${pendingDeletePropertyIds.length} Properties`}
+        message={
+          pendingDeletePropertyIds.length === 1
+            ? `Are you sure you want to delete "${pendingDeletePropertyName}"? This cannot be undone.`
+            : `Are you sure you want to delete ${pendingDeletePropertyIds.length} properties? This cannot be undone.`
+        }
+        onConfirm={handleDeletePropertiesConfirm}
+        onCancel={() => setPendingDeletePropertyIds([])}
+      />
+
+      <ConfirmDeleteModal
+        visible={pendingDeleteTaskIds.length > 0}
+        title={pendingDeleteTaskIds.length === 1 ? 'Delete Task' : `Delete ${pendingDeleteTaskIds.length} Tasks`}
+        message={
+          pendingDeleteTaskIds.length === 1
+            ? `Are you sure you want to delete "${pendingDeleteTaskTitle}"? This cannot be undone.`
+            : `Are you sure you want to delete ${pendingDeleteTaskIds.length} tasks? This cannot be undone.`
+        }
+        onConfirm={handleDeleteTasksConfirm}
+        onCancel={() => setPendingDeleteTaskIds([])}
+      />
+    </PageContainer>
+  );
+}
+
+// ─── Section header with add / selection-mode buttons ───────────────────────
+
+type SectionHeaderProps = {
+  title: string;
+  selectionMode: boolean;
+  selectedCount: number;
+  onAdd: () => void;
+  onCancelSelection: () => void;
+  onDeleteSelected: () => void;
+};
+
+function SectionHeader({ title, selectionMode, selectedCount, onAdd, onCancelSelection, onDeleteSelected }: SectionHeaderProps) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
+      <Text style={{ fontSize: 18, fontWeight: '600', flex: 1, color: colors.textPrimary }}>{title}</Text>
+      {selectionMode ? (
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={onCancelSelection}
+            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.borderLight }}
+          >
+            <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onDeleteSelected}
+            disabled={selectedCount === 0}
+            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: selectedCount > 0 ? colors.danger : colors.dangerDisabled }}
+          >
+            <Text style={{ fontSize: 13, color: '#fff', fontWeight: '600' }}>
+              Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </ScrollView>
+      ) : (
+        <TouchableOpacity
+          onPress={onAdd}
+          style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <MaterialIcons name="add" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }

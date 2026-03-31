@@ -1,8 +1,9 @@
 import PropertySquareCard from '@/components/PropertySquareCard';
 import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-
-type Property = { id: string; name: string };
+import { useTheme } from '@/theme/ThemeContext';
+import { MAX_WIDTH, SCREEN_PADDING } from '@/constants/layout';
+import { Property } from '@/types';
 
 type Props = {
   properties: Property[];
@@ -16,21 +17,26 @@ type Props = {
 };
 
 const TRACK_HEIGHT = 12;
-const DASHBOARD_PADDING = 24; // matches dashboard padding: 24
-const DASHBOARD_MAX_WIDTH = 480;
 
-export default function PropertyScrollRow({ properties, onPress, onRename, onDelete, selectedIds, selectionMode, onToggleSelect, onEnterSelectionMode }: Props) {
+export default function PropertyScrollRow({
+  properties, onPress, onRename, onDelete,
+  selectedIds, selectionMode, onToggleSelect, onEnterSelectionMode,
+}: Props) {
+  const { colors } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const { width: windowWidth } = useWindowDimensions();
-  const containerWidth = Math.min(windowWidth - DASHBOARD_PADDING * 2, DASHBOARD_MAX_WIDTH);
+  const containerWidth = Math.min(windowWidth - SCREEN_PADDING * 2, MAX_WIDTH);
 
   const [scrollX, setScrollX] = useState(0);
   const [contentWidth, setContentWidth] = useState(1);
 
-  // Refs used during drag — avoid stale closures
+  // Keep refs in sync for drag handlers (avoid stale closures)
   const scrollXRef = useRef(0);
   const contentWidthRef = useRef(1);
   const containerWidthRef = useRef(containerWidth);
+  useEffect(() => { scrollXRef.current = scrollX; }, [scrollX]);
+  useEffect(() => { contentWidthRef.current = contentWidth; }, [contentWidth]);
+  useEffect(() => { containerWidthRef.current = containerWidth; }, [containerWidth]);
 
   const canScroll = contentWidth > containerWidth;
   const thumbRatio = Math.min(1, containerWidth / contentWidth);
@@ -38,12 +44,6 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
   const maxThumbLeft = containerWidth - thumbWidth;
   const maxScroll = contentWidth - containerWidth;
   const thumbLeft = canScroll && maxThumbLeft > 0 ? (scrollX / maxScroll) * maxThumbLeft : 0;
-
-  // Keep refs in sync
-  useEffect(() => { scrollXRef.current = scrollX; }, [scrollX]);
-  useEffect(() => { contentWidthRef.current = contentWidth; }, [contentWidth]);
-  useEffect(() => { containerWidthRef.current = containerWidth; }, [containerWidth]);
-
 
   // Web: mouse drag on scrollbar thumb
   const onThumbMouseDown = Platform.OS === 'web'
@@ -57,8 +57,7 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
           const ml = containerWidthRef.current - Math.max(48, Math.min(1, containerWidthRef.current / contentWidthRef.current) * containerWidthRef.current);
           if (ml <= 0) return;
           const newThumbLeft = Math.max(0, Math.min(ml, startThumbLeft + dx));
-          const maxSc = contentWidthRef.current - containerWidthRef.current;
-          const newScrollX = (newThumbLeft / ml) * maxSc;
+          const newScrollX = (newThumbLeft / ml) * (contentWidthRef.current - containerWidthRef.current);
           scrollRef.current?.scrollTo({ x: newScrollX, animated: false });
         };
 
@@ -72,7 +71,7 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
       }
     : undefined;
 
-  // Native: PanResponder
+  // Native: PanResponder drag
   const thumbLeftAtGestureStart = useRef(0);
   const panResponder = useRef(
     PanResponder.create({
@@ -89,7 +88,7 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
         scrollRef.current?.scrollTo({ x: (newThumbLeft / ml) * maxSc, animated: false });
       },
       onPanResponderRelease: () => {},
-    })
+    }),
   ).current;
 
   const thumbProps = Platform.OS === 'web'
@@ -117,7 +116,9 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
             onDelete={() => onDelete(property)}
             selected={selectedIds.includes(property.id)}
             selectionMode={selectionMode}
-            onLongPress={() => selectionMode ? onToggleSelect(property.id) : onEnterSelectionMode(property.id)}
+            onLongPress={() =>
+              selectionMode ? onToggleSelect(property.id) : onEnterSelectionMode(property.id)
+            }
           />
         ))}
       </ScrollView>
@@ -126,7 +127,7 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
         <View
           style={{
             height: TRACK_HEIGHT,
-            backgroundColor: '#d1d5db',
+            backgroundColor: colors.scrollTrack,
             borderRadius: TRACK_HEIGHT / 2,
             marginTop: 10,
             marginHorizontal: 2,
@@ -140,7 +141,7 @@ export default function PropertyScrollRow({ properties, onPress, onRename, onDel
               left: thumbLeft,
               width: thumbWidth,
               height: TRACK_HEIGHT,
-              backgroundColor: '#4b5563',
+              backgroundColor: colors.scrollThumb,
               borderRadius: TRACK_HEIGHT / 2,
               cursor: 'grab' as any,
               userSelect: 'none' as any,
