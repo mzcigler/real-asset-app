@@ -14,7 +14,6 @@ import {
   createTask,
   deleteTasks,
   fetchAllTasksForUser,
-  getOrCreateManualFileId,
   updateTask,
 } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
@@ -103,23 +102,39 @@ export default function DashboardScreen() {
 
   // ── Task actions ──────────────────────────────────────────────────────────
 
-  const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string) => {
-    if (!propertyId) return;
-    const fileId = await getOrCreateManualFileId(propertyId);
-    const newTask = await createTask(fileId, title, description || null, dueDate);
-    const propertyName = properties.find((p) => p.id === propertyId)?.name || '';
-    setAllTasks((prev) => sortByDueDate([...prev, { ...newTask, propertyName, fileName: '__manual__' }]));
+  const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string, fileId?: string) => {
+    if (!userId) return;
+    const newTask = await createTask(userId, title, description || null, dueDate, propertyId, fileId);
+    const propertyName = propertyId ? (properties.find((p) => p.id === propertyId)?.name || '') : '';
+    setAllTasks((prev) => sortByDueDate([...prev, { ...newTask, propertyName, fileName: '' }]));
     setAddTaskVisible(false);
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null);
+    await updateTask(
+      taskId,
+      updated.title,
+      updated.description ?? null,
+      updated.dueDate ?? null,
+      updated.propertyId,
+      updated.fileId,
+    );
     setAllTasks((prev) =>
-      sortByDueDate(prev.map((t) =>
-        t.id === taskId
-          ? { ...t, title: updated.title, description: updated.description ?? null, due_date: toDateString(updated.dueDate ?? null) }
-          : t,
-      )),
+      sortByDueDate(prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const propertyName = updated.propertyId
+          ? (properties.find((p) => p.id === updated.propertyId)?.name || '')
+          : '';
+        return {
+          ...t,
+          title: updated.title,
+          description: updated.description ?? null,
+          due_date: toDateString(updated.dueDate ?? null),
+          property_id: updated.propertyId ?? null,
+          file_id: updated.fileId ?? null,
+          propertyName,
+        };
+      })),
     );
   };
 
@@ -133,7 +148,7 @@ export default function DashboardScreen() {
   // ── Derived filter values ─────────────────────────────────────────────────
 
   const tasksFilteredByProperty = propertyFilter
-    ? allTasks.filter((t) => t.propertyName === propertyFilter)
+    ? allTasks.filter((t) => t.property_id === propertyFilter)
     : allTasks;
 
   const displayedTasks = fileFilter
@@ -145,8 +160,8 @@ export default function DashboardScreen() {
     ? Array.from(
         new Map(
           tasksFilteredByProperty
-            .filter((t) => t.file_id)
-            .map((t) => [t.file_id, { id: t.file_id, name: t.fileName }]),
+            .filter((t) => t.file_id != null && t.fileName)
+            .map((t) => [t.file_id!, { id: t.file_id!, name: t.fileName }]),
         ).values(),
       )
     : [];
@@ -217,7 +232,7 @@ export default function DashboardScreen() {
         <FilterChips
           options={[
             { label: 'All', value: null },
-            ...properties.map((p) => ({ label: p.name, value: p.name })),
+            ...properties.map((p) => ({ label: p.name, value: p.id })),
           ]}
           selected={propertyFilter}
           onSelect={handlePropertyFilterSelect}
@@ -247,13 +262,21 @@ export default function DashboardScreen() {
         displayedTasks.map((task) => (
           <TaskItem
             key={task.id}
-            task={{ id: task.id, title: task.title, description: task.description ?? undefined, dueDate: task.due_date ? new Date(task.due_date) : null }}
+            task={{
+              id: task.id,
+              title: task.title,
+              description: task.description ?? undefined,
+              dueDate: task.due_date ? new Date(task.due_date) : null,
+              propertyId: task.property_id,
+              fileId: task.file_id,
+            }}
             propertyName={task.propertyName}
             onUpdate={(updated) => handleUpdateTask(task.id, updated)}
             onDelete={() => setPendingDeleteTaskIds([task.id])}
             selected={taskSel.selectedIds.includes(task.id)}
             selectionMode={taskSel.selectionMode}
             onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
+            properties={properties}
           />
         ))
       )}
@@ -270,6 +293,7 @@ export default function DashboardScreen() {
         visible={uploadVisible}
         userId={userId!}
         onClose={() => setUploadVisible(false)}
+        onSuccess={() => { if (userId) loadTasks(userId); }}
       />
 
       <AddPropertyPopup

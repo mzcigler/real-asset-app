@@ -11,7 +11,8 @@ export type TaskType = {
   title: string;
   description?: string;
   dueDate?: Date | null;
-  propertyId?: string;
+  propertyId?: string | null;
+  fileId?: string | null;
 };
 
 /** Raw DB row from the tasks table */
@@ -20,7 +21,9 @@ export type DBTask = {
   title: string;
   description: string | null;
   due_date: string | null;
-  file_id: string;
+  user_id: string;
+  property_id: string | null;
+  file_id: string | null;
 };
 
 /** DBTask enriched with the property name (used on dashboard) */
@@ -34,4 +37,5 @@ export type FileRecord = {
   id: string;
   file_name: string;
   file_path: string;
+  property_id: string | null;
 };

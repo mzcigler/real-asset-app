@@ -8,14 +8,44 @@ import { Platform } from 'react-native';
 export async function fetchFilesForProperty(propertyId: string): Promise<FileRecord[]> {
   const { data } = await supabase
     .from('files')
-    .select('id, file_name, file_path')
+    .select('id, file_name, file_path, property_id')
     .eq('property_id', propertyId);
   return data || [];
 }
 
 /**
- * Delete files from storage and cascade-delete their tasks and DB records.
- * Accepts the full FileRecord objects so we can remove the storage blobs.
+ * Upload a document file to storage and insert a record in the files table.
+ * Storage path: {userId}/{propertyId}/{timestamp}-{fileName}
+ * Returns the new file's DB id and storage path.
+ */
+export async function uploadPropertyFile(
+  userId: string,
+  propertyId: string,
+  fileUri: string,
+  fileName: string,
+): Promise<{ id: string; filePath: string }> {
+  const response = await fetch(fileUri);
+  const blob = await response.blob();
+  const filePath = `${userId}/${propertyId}/${Date.now()}-${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('user_files')
+    .upload(filePath, blob);
+  if (uploadError) throw uploadError;
+
+  const { data, error: dbError } = await supabase
+    .from('files')
+    .insert({ user_id: userId, property_id: propertyId, file_path: filePath, file_name: fileName })
+    .select('id')
+    .single();
+  if (dbError) throw dbError;
+
+  return { id: data.id, filePath };
+}
+
+/**
+ * Delete files from storage and unlink them from any tasks (sets file_id to null).
+ * Tasks themselves are preserved — they still exist under their property.
  */
 export async function deleteFiles(files: FileRecord[]): Promise<void> {
   const paths = files.map((f) => f.file_path).filter(Boolean);
@@ -23,7 +53,8 @@ export async function deleteFiles(files: FileRecord[]): Promise<void> {
     await supabase.storage.from('user_files').remove(paths);
   }
   const ids = files.map((f) => f.id);
-  await supabase.from('tasks').delete().in('file_id', ids);
+  // Unlink tasks from the deleted files (keep tasks, just remove the file reference)
+  await supabase.from('tasks').update({ file_id: null }).in('file_id', ids);
   await supabase.from('files').delete().in('id', ids);
 }
 

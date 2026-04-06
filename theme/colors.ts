@@ -35,6 +35,7 @@ export const lightColors = {
   dangerDisabled: '#fca5a5',
   /** Blue — upload, info, links */
   info: '#2563eb',
+  infoLight: '#eff6ff',
   /** Yellow — warnings */
   warning: '#f59e0b',
 
@@ -91,6 +92,7 @@ export const darkColors: typeof lightColors = {
   danger: '#ef4444',
   dangerDisabled: '#7f1d1d',
   info: '#3b82f6',
+  infoLight: '#1e3a5f',
   warning: '#f59e0b',
 
   // ── Task Urgency Indicators ───────────────────────────────────────────────

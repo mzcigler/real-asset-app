@@ -1,5 +1,6 @@
+import HorizontalScrollWithBar from '@/components/HorizontalScrollWithBar';
 import { useTheme } from '@/theme/ThemeContext';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 type ChipOption = {
   label: string;
@@ -16,43 +17,34 @@ export default function FilterChips({ options, selected, onSelect }: Props) {
   const { colors } = useTheme();
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-    >
-      <View style={styles.row}>
-        {options.map((opt) => {
-          const isSelected = selected === opt.value;
-          return (
-            <TouchableOpacity
-              key={opt.value ?? '__null__'}
-              onPress={() => onSelect(opt.value)}
-              style={[
-                styles.chip,
-                {
-                  borderColor: isSelected ? colors.primary : colors.border,
-                  backgroundColor: isSelected ? colors.primaryLight : 'transparent',
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  {
-                    color: isSelected ? colors.primary : colors.textSecondary,
-                    fontWeight: isSelected ? '600' : '400',
-                  },
-                ]}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <HorizontalScrollWithBar style={styles.scroll} contentContainerStyle={styles.row}>
+      {options.map((opt) => {
+        const isSelected = selected === opt.value;
+        return (
+          <TouchableOpacity
+            key={opt.value ?? '__null__'}
+            onPress={() => onSelect(opt.value)}
+            style={[
+              styles.chip,
+              {
+                borderColor: isSelected ? colors.primary : colors.border,
+                backgroundColor: isSelected ? colors.primaryLight : 'transparent',
+              },
+            ]}
+          >
+            <Text style={[
+              styles.chipText,
+              {
+                color: isSelected ? colors.primary : colors.textSecondary,
+                fontWeight: isSelected ? '600' : '400',
+              },
+            ]}>
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </HorizontalScrollWithBar>
   );
 }
 
@@ -60,12 +52,10 @@ const styles = StyleSheet.create({
   scroll: {
     marginBottom: 10,
   },
-  scrollContent: {
-    paddingRight: 8,
-  },
   row: {
     flexDirection: 'row',
     gap: 8,
+    paddingRight: 8,
   },
   chip: {
     paddingHorizontal: 12,

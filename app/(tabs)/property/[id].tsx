@@ -8,7 +8,7 @@ import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteFiles, downloadFile, fetchFilesForProperty } from '@/services/fileService';
-import { createTask, deleteTasks, fetchTasksForFiles, getOrCreateManualFileId, updateTask } from '@/services/taskService';
+import { createTask, deleteTasks, fetchTasksForProperty, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
 import { DBTask, FileRecord, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
@@ -66,10 +66,9 @@ export default function PropertyDetailScreen() {
 
       const allFiles = await fetchFilesForProperty(id);
       setAllPropertyFiles(allFiles);
-      setFiles(allFiles.filter((f) => f.file_name !== '__manual__'));
+      setFiles(allFiles);
 
-      const fileIds = allFiles.map((f) => f.id);
-      setTasks(await fetchTasksForFiles(fileIds));
+      setTasks(await fetchTasksForProperty(id));
     } catch (err) {
       console.error('Failed to load property data:', err);
     } finally {
@@ -79,19 +78,33 @@ export default function PropertyDetailScreen() {
 
   // ── Task actions ──────────────────────────────────────────────────────────
 
-  const handleAddTask = async (title: string, description: string, dueDate: Date | null) => {
-    const fileId = await getOrCreateManualFileId(id);
-    const newTask = await createTask(fileId, title, description || null, dueDate);
+  const handleAddTask = async (title: string, description: string, dueDate: Date | null, _propertyId?: string, fileId?: string) => {
+    if (!userId) return;
+    const newTask = await createTask(userId, title, description || null, dueDate, id, fileId);
     setTasks((prev) => sortByDueDate([...prev, newTask]));
     setAddTaskVisible(false);
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null);
+    // property_id stays fixed on the property detail screen; only file_id can change
+    await updateTask(
+      taskId,
+      updated.title,
+      updated.description ?? null,
+      updated.dueDate ?? null,
+      undefined, // don't change property_id
+      updated.fileId,
+    );
     setTasks((prev) =>
       sortByDueDate(prev.map((t) =>
         t.id === taskId
-          ? { ...t, title: updated.title, description: updated.description ?? null, due_date: toDateString(updated.dueDate ?? null) }
+          ? {
+              ...t,
+              title: updated.title,
+              description: updated.description ?? null,
+              due_date: toDateString(updated.dueDate ?? null),
+              file_id: updated.fileId ?? null,
+            }
           : t,
       )),
     );
@@ -110,7 +123,10 @@ export default function PropertyDetailScreen() {
     const filesToDelete = files.filter((f) => pendingDeleteFileIds.includes(f.id));
     await deleteFiles(filesToDelete);
     setFiles((prev) => prev.filter((f) => !pendingDeleteFileIds.includes(f.id)));
-    setTasks((prev) => prev.filter((t) => !pendingDeleteFileIds.includes(t.file_id)));
+    // Unlink tasks from deleted files (tasks are preserved with file_id = null)
+    setTasks((prev) => prev.map((t) =>
+      t.file_id && pendingDeleteFileIds.includes(t.file_id) ? { ...t, file_id: null } : t,
+    ));
     setPendingDeleteFileIds([]);
     fileSel.cancel();
   };
@@ -131,7 +147,7 @@ export default function PropertyDetailScreen() {
   };
 
   const taskFileOptions: FileRecord[] = allPropertyFiles.filter((f) =>
-    tasks.some((t) => t.file_id === f.id),
+    tasks.some((t) => t.file_id != null && t.file_id === f.id),
   );
 
   const displayedTasks = taskFileFilter
@@ -248,6 +264,7 @@ export default function PropertyDetailScreen() {
                     selected={taskSel.selectedIds.includes(task.id)}
                     selectionMode={taskSel.selectionMode}
                     onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
+                    files={allPropertyFiles}
                   />
                 ))}
               </>
@@ -279,13 +296,15 @@ export default function PropertyDetailScreen() {
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
         onAdd={handleAddTask}
+        files={allPropertyFiles}
       />
 
       <UploadExtractPopup
         visible={uploadVisible}
         userId={userId!}
         initialPropertyId={id}
-        onClose={() => { setUploadVisible(false); loadData(); }}
+        onClose={() => setUploadVisible(false)}
+        onSuccess={() => loadData()}
       />
 
       <ConfirmDeleteModal

@@ -1,34 +1,57 @@
-import { DateInput } from '@/components/DateInput';
-import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { LoadingModal } from './LoadingModal';
 import Button from './Button';
+import ChipSelector from '@/components/ChipSelector';
+import { DateInput } from '@/components/DateInput';
+import { fetchFilesForProperty } from '@/services/fileService';
 import { useTheme } from '@/theme/ThemeContext';
-import { Property } from '@/types';
+import { FileRecord, Property } from '@/types';
+import { useEffect, useState } from 'react';
+import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LoadingModal } from './LoadingModal';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onAdd: (title: string, description: string, dueDate: Date | null, propertyId?: string) => Promise<void>;
-  /** When provided, shows a property selector (used from dashboard) */
+  onAdd: (
+    title: string,
+    description: string,
+    dueDate: Date | null,
+    propertyId?: string,
+    fileId?: string,
+  ) => Promise<void>;
+  /** Dashboard: shows property picker */
   properties?: Property[];
+  /** Property detail: pre-loaded files for file picker */
+  files?: FileRecord[];
 };
 
-export default function AddTaskModal({ visible, onClose, onAdd, properties }: Props) {
+export default function AddTaskModal({ visible, onClose, onAdd, properties, files: propFiles }: Props) {
   const { colors } = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [availableFiles, setAvailableFiles] = useState<FileRecord[]>(propFiles || []);
   const [saving, setSaving] = useState(false);
 
-  const canSubmit = !!title.trim() && (!properties || !!selectedPropertyId);
+  // Dashboard mode: fetch files when selected property changes
+  useEffect(() => {
+    setSelectedFileId(null);
+    setAvailableFiles([]);
+    if (!selectedPropertyId) return;
+    fetchFilesForProperty(selectedPropertyId).then(setAvailableFiles);
+  }, [selectedPropertyId]);
+
+  // Property detail mode: use pre-loaded files
+  useEffect(() => {
+    if (propFiles) setAvailableFiles(propFiles);
+  }, [propFiles]);
 
   const handleAdd = async () => {
-    if (!canSubmit) return;
+    if (!title.trim()) return;
     setSaving(true);
     try {
-      await onAdd(title.trim(), description.trim(), dueDate, selectedPropertyId ?? undefined);
+      await onAdd(title.trim(), description.trim(), dueDate, selectedPropertyId ?? undefined, selectedFileId ?? undefined);
       reset();
     } finally {
       setSaving(false);
@@ -40,6 +63,8 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
     setDescription('');
     setDueDate(null);
     setSelectedPropertyId(null);
+    setSelectedFileId(null);
+    setAvailableFiles([]);
   };
 
   const handleCancel = () => {
@@ -51,45 +76,32 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
     <>
       <LoadingModal visible={saving} message="Saving task…" />
       <Modal transparent visible={visible} animationType="fade" onRequestClose={handleCancel}>
-        <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.box, { backgroundColor: colors.surface }]}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>New Task</Text>
 
-            {/* Property selector (dashboard only) */}
             {properties && (
-              <>
-                <Text style={[styles.label, { color: colors.textMuted }]}>Property *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-                  <View style={styles.chipsRow}>
-                    {properties.map((p) => {
-                      const isSelected = selectedPropertyId === p.id;
-                      return (
-                        <TouchableOpacity
-                          key={p.id}
-                          onPress={() => setSelectedPropertyId(p.id)}
-                          style={[
-                            styles.chip,
-                            {
-                              borderColor: isSelected ? colors.success : colors.border,
-                              backgroundColor: isSelected ? colors.successLight : colors.surface,
-                            },
-                          ]}
-                        >
-                          <Text style={[
-                            styles.chipText,
-                            {
-                              color: isSelected ? colors.success : colors.textSecondary,
-                              fontWeight: isSelected ? '600' : '400',
-                            },
-                          ]}>
-                            {p.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </>
+              <ChipSelector
+                label="Property"
+                options={[
+                  { label: 'None', value: null },
+                  ...properties.map((p) => ({ label: p.name, value: p.id })),
+                ]}
+                selected={selectedPropertyId}
+                onSelect={setSelectedPropertyId}
+              />
+            )}
+
+            {availableFiles.length > 0 && (
+              <ChipSelector
+                label="Link to file"
+                options={[
+                  { label: 'None', value: null },
+                  ...availableFiles.map((f) => ({ label: f.file_name, value: f.id })),
+                ]}
+                selected={selectedFileId}
+                onSelect={setSelectedFileId}
+              />
             )}
 
             <Text style={[styles.label, { color: colors.textMuted }]}>Title *</Text>
@@ -127,15 +139,10 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
                 title={saving ? 'Saving…' : 'Add'}
                 onPress={handleAdd}
                 variant="success"
-                disabled={saving || !canSubmit}
+                disabled={saving || !title.trim()}
                 style={{ flex: 1 }}
               />
-              <Button
-                title="Cancel"
-                onPress={handleCancel}
-                variant="secondary"
-                style={{ flex: 1 }}
-              />
+              <Button title="Cancel" onPress={handleCancel} variant="secondary" style={{ flex: 1 }} />
             </View>
           </View>
         </View>
@@ -146,6 +153,7 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties }: Pr
 
 const styles = StyleSheet.create({
   overlay: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -162,22 +170,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     marginBottom: 4,
-  },
-  chipsScroll: {
-    marginBottom: 12,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  chipText: {
-    fontSize: 13,
   },
   input: {
     borderWidth: 1,

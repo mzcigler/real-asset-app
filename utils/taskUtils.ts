@@ -17,6 +17,8 @@ export function dbTaskToTaskType(t: DBTask): TaskType {
     title: t.title,
     description: t.description ?? undefined,
     dueDate: t.due_date ? new Date(t.due_date) : null,
+    propertyId: t.property_id,
+    fileId: t.file_id,
   };
 }
 

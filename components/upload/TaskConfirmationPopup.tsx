@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { createTask } from '@/services/taskService';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from '@/components/Button';
@@ -10,11 +10,20 @@ import { TaskType } from '@/types';
 type Props = {
   visible: boolean;
   tasks: TaskType[];
-  fileId: string | undefined;
+  userId: string;
+  propertyId?: string;
+  fileId?: string;
   onClose: (saved: boolean) => void;
 };
 
-export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fileId, onClose }: Props) {
+export default function TaskConfirmationPopup({
+  visible,
+  tasks: initialTasks,
+  userId,
+  propertyId,
+  fileId,
+  onClose,
+}: Props) {
   const { colors } = useTheme();
   const [tasks, setTasks] = useState<TaskType[]>(initialTasks);
   const [saving, setSaving] = useState(false);
@@ -32,16 +41,17 @@ export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fi
   };
 
   const handleConfirm = async () => {
-    if (!fileId) return;
     setSaving(true);
     try {
       for (const task of tasks) {
-        await supabase.from('tasks').insert({
-          file_id: fileId,
-          title: task.title,
-          description: task.description,
-          due_date: task.dueDate ? task.dueDate.toISOString().slice(0, 10) : null,
-        });
+        await createTask(
+          userId,
+          task.title,
+          task.description || null,
+          task.dueDate ?? null,
+          propertyId,
+          fileId,
+        );
       }
       onClose(true);
     } catch (err) {

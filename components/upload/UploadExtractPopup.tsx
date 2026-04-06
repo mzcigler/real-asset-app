@@ -1,5 +1,5 @@
 import { extractTasks } from '@/services/extractionService';
-import { supabase } from '@/services/supabase';
+import { uploadPropertyFile } from '@/services/fileService';
 import * as DocumentPicker from 'expo-document-picker';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -16,10 +16,12 @@ type Props = {
   visible: boolean;
   userId: string;
   onClose: () => void;
+  /** Called after tasks are successfully confirmed and saved */
+  onSuccess?: () => void;
   initialPropertyId?: string;
 };
 
-export default function UploadExtractPopup({ visible, userId, onClose, initialPropertyId }: Props) {
+export default function UploadExtractPopup({ visible, userId, onClose, onSuccess, initialPropertyId }: Props) {
   const { colors } = useTheme();
   const [fileName, setFileName] = useState<string | undefined>();
   const [fileId, setFileId] = useState<string | undefined>();
@@ -52,32 +54,6 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
     setSelectedFile(file);
   };
 
-  const uploadFile = async (file: any, propertyId: string): Promise<string> => {
-    setUploading(true);
-    try {
-      const response = await fetch(file.uri);
-      const blob = await response.blob();
-      const filePath = `${propertyId}/${Date.now()}-${file.name}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('user_files')
-        .upload(filePath, blob);
-      if (uploadError) throw uploadError;
-
-      const { data, error: dbError } = await supabase
-        .from('files')
-        .insert({ property_id: propertyId, file_path: filePath, file_name: file.name })
-        .select('id')
-        .single();
-      if (dbError) throw dbError;
-
-      setFileId(data.id);
-      return filePath;
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleClose = () => {
     onClose();
     setTimeout(() => {
@@ -91,11 +67,20 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
   const handleExtract = async () => {
     if (!selectedFile || !selectedProperty) return;
     try {
-      const uploadedPath = await uploadFile(selectedFile, selectedProperty);
+      setUploading(true);
+      const { id, filePath } = await uploadPropertyFile(
+        userId,
+        selectedProperty,
+        selectedFile.uri,
+        selectedFile.name,
+      );
+      setFileId(id);
+      setUploading(false);
+
       setExtracting(true);
       const rawTasks = await extractTasks(
         desc !== '' ? desc : 'No additional description, just the file',
-        uploadedPath,
+        filePath,
       );
       const tasks: TaskType[] = rawTasks.map((task) => {
         let dueDate: Date | null = null;
@@ -110,6 +95,8 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
       setExtractedTasks(tasks);
     } catch (err) {
       console.error('Error extracting tasks:', err);
+      setUploading(false);
+      setExtracting(false);
     }
   };
 
@@ -173,11 +160,16 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
         <TaskConfirmationPopup
           visible={showTaskPopup}
           tasks={extractedTasks}
+          userId={userId}
+          propertyId={selectedProperty ?? undefined}
           fileId={fileId}
           onClose={(saved) => {
             setShowTaskPopup(false);
             setExtractedTasks([]);
-            if (saved) handleClose();
+            if (saved) {
+              onSuccess?.();
+              handleClose();
+            }
           }}
         />
       </View>

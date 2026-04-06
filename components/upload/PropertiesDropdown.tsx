@@ -1,6 +1,7 @@
-import { supabase } from '@/services/supabase';
+import { fetchProperties } from '@/services/propertyService';
 import { useTheme } from '@/theme/ThemeContext';
 import { INPUT_HEIGHT } from '@/theme/tokens';
+import { Property } from '@/types';
 import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
@@ -13,22 +14,16 @@ type PropertyDropdownProps = {
 
 export default function PropertyDropdown({ userId, selectedProperty, onSelect }: PropertyDropdownProps) {
   const { colors } = useTheme();
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
-    supabase
-      .from('properties')
-      .select('id, name')
-      .eq('user_id', userId)
-      .then(({ data, error }) => {
-        if (!error) setProperties(data || []);
-      });
+    fetchProperties(userId).then(setProperties);
   }, [userId]);
 
   return (
     <>
       <Text style={[styles.label, { color: colors.textPrimary }]}>
-        Select Property:
+        Property *
       </Text>
 
       <View style={[styles.pickerWrap, {

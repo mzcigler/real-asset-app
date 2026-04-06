@@ -1,9 +1,12 @@
+import ChipSelector from '@/components/ChipSelector';
+import { fetchFilesForProperty } from '@/services/fileService';
+import { useTheme } from '@/theme/ThemeContext';
+import { FileRecord, Property, TaskType } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Button from './Button';
 import { DateInput } from './DateInput';
-import { useTheme } from '@/theme/ThemeContext';
-import { TaskType } from '@/types';
 
 type TaskItemProps = {
   task: TaskType;
@@ -14,6 +17,10 @@ type TaskItemProps = {
   selected?: boolean;
   selectionMode?: boolean;
   onLongPress?: () => void;
+  /** Dashboard: pass all properties so user can change property in edit mode */
+  properties?: Property[];
+  /** Property detail: pass pre-loaded files for the current property */
+  files?: FileRecord[];
 };
 
 function getUrgencyColor(dueDate: Date | null, colors: ReturnType<typeof useTheme>['colors']): string {
@@ -33,25 +40,46 @@ export default function TaskItem({
   selected,
   selectionMode,
   onLongPress,
+  properties,
+  files: propFiles,
 }: TaskItemProps) {
   const { colors } = useTheme();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [dueDate, setDueDate] = useState<Date | null>(task.dueDate ? new Date(task.dueDate) : null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(task.propertyId ?? null);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(task.fileId ?? null);
+  const [availableFiles, setAvailableFiles] = useState<FileRecord[]>(propFiles || []);
 
   useEffect(() => {
     setTitle(task.title);
     setDescription(task.description || '');
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+    setSelectedPropertyId(task.propertyId ?? null);
+    setSelectedFileId(task.fileId ?? null);
   }, [task]);
 
   useEffect(() => {
     if (selectionMode) setEditing(false);
   }, [selectionMode]);
 
+  // Dashboard mode: fetch files when selected property changes
+  useEffect(() => {
+    if (!properties) return;
+    setSelectedFileId(null);
+    setAvailableFiles([]);
+    if (!selectedPropertyId) return;
+    fetchFilesForProperty(selectedPropertyId).then(setAvailableFiles);
+  }, [selectedPropertyId, properties]);
+
+  // Property detail mode: use pre-loaded files
+  useEffect(() => {
+    if (propFiles) setAvailableFiles(propFiles);
+  }, [propFiles]);
+
   const handleSave = () => {
-    onUpdate({ ...task, title, description, dueDate });
+    onUpdate({ ...task, title, description, dueDate, propertyId: selectedPropertyId, fileId: selectedFileId });
     setEditing(false);
   };
 
@@ -59,6 +87,9 @@ export default function TaskItem({
     setTitle(task.title);
     setDescription(task.description || '');
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+    setSelectedPropertyId(task.propertyId ?? null);
+    setSelectedFileId(task.fileId ?? null);
+    setAvailableFiles(propFiles || []);
     setEditing(false);
   };
 
@@ -75,12 +106,38 @@ export default function TaskItem({
     >
       {editing ? (
         <View style={styles.editContainer}>
+          <Text style={[styles.editHeader, { color: colors.textPrimary }]}>Edit Task</Text>
+
+          {properties && (
+            <ChipSelector
+              label="Property"
+              options={[
+                { label: 'None', value: null },
+                ...properties.map((p) => ({ label: p.name, value: p.id })),
+              ]}
+              selected={selectedPropertyId}
+              onSelect={setSelectedPropertyId}
+            />
+          )}
+
+          {availableFiles.length > 0 && (
+            <ChipSelector
+              label="Link to file"
+              options={[
+                { label: 'None', value: null },
+                ...availableFiles.map((f) => ({ label: f.file_name, value: f.id })),
+              ]}
+              selected={selectedFileId}
+              onSelect={setSelectedFileId}
+            />
+          )}
+
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="Task title"
             placeholderTextColor={colors.inputPlaceholder}
-            style={[styles.editInput, {
+            style={[styles.input, {
               borderColor: colors.inputBorder,
               color: colors.textPrimary,
               backgroundColor: colors.inputBackground,
@@ -91,28 +148,17 @@ export default function TaskItem({
             onChangeText={setDescription}
             placeholder="Description (optional)"
             placeholderTextColor={colors.inputPlaceholder}
-            style={[styles.editInput, {
+            style={[styles.input, {
               borderColor: colors.inputBorder,
               color: colors.textSecondary,
               backgroundColor: colors.inputBackground,
             }]}
           />
-          <DateInput value={dueDate} onChange={(date: Date | null) => setDueDate(date)} />
-          <View style={styles.editBtnRow}>
-            <TouchableOpacity
-              onPress={handleSave}
-              style={[styles.editBtn, { backgroundColor: colors.success }]}
-            >
-              <MaterialIcons name="check" size={14} color="#fff" />
-              <Text style={[styles.editBtnText, { color: '#fff' }]}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleCancel}
-              style={[styles.editBtn, { backgroundColor: colors.borderLight }]}
-            >
-              <MaterialIcons name="close" size={14} color={colors.textMuted} />
-              <Text style={[styles.editBtnText, { color: colors.textMuted }]}>Cancel</Text>
-            </TouchableOpacity>
+          <DateInput value={dueDate} onChange={setDueDate} />
+
+          <View style={styles.btnRow}>
+            <Button title="Save" onPress={handleSave} variant="success" style={{ flex: 1 }} />
+            <Button title="Cancel" onPress={handleCancel} variant="secondary" style={{ flex: 1 }} />
           </View>
         </View>
       ) : (
@@ -136,12 +182,7 @@ export default function TaskItem({
               {selected && <MaterialIcons name="check" size={12} color="#fff" />}
             </View>
           ) : (
-            <View
-              style={[
-                styles.urgencyDot,
-                { backgroundColor: getUrgencyColor(dueDate, colors) },
-              ]}
-            />
+            <View style={[styles.urgencyDot, { backgroundColor: getUrgencyColor(dueDate, colors) }]} />
           )}
 
           <View style={styles.content}>
@@ -153,17 +194,17 @@ export default function TaskItem({
             ) : null}
             {(dueDate || propertyName) ? (
               <View style={styles.metaRow}>
-                {dueDate ? (
+                {dueDate && (
                   <Text style={[styles.metaText, { color: colors.textDisabled }]}>
                     Due {dueDate.toISOString().split('T')[0]}
                   </Text>
-                ) : null}
-                {dueDate && propertyName ? (
+                )}
+                {dueDate && propertyName && (
                   <Text style={[styles.metaText, { color: colors.border }]}>·</Text>
-                ) : null}
-                {propertyName ? (
+                )}
+                {propertyName && (
                   <Text style={[styles.metaText, { color: colors.textDisabled }]}>{propertyName}</Text>
-                ) : null}
+                )}
               </View>
             ) : null}
           </View>
@@ -194,7 +235,12 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
-  editInput: {
+  editHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  input: {
     fontWeight: '600',
     fontSize: 14,
     borderWidth: 1,
@@ -202,22 +248,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  editBtnRow: {
+  btnRow: {
     flexDirection: 'row',
     gap: 8,
-  },
-  editBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    borderRadius: 8,
-    paddingVertical: 7,
-  },
-  editBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
+    marginTop: 4,
   },
   viewRow: {
     flexDirection: 'row',
