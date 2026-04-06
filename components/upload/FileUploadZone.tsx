@@ -2,8 +2,8 @@ import { useTheme } from '@/theme/ThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from './Button';
-import { SingleLineInput } from './Inputs';
+import Button from '@/components/Button';
+import { SingleLineInput } from '@/components/Inputs';
 
 interface FileUploadZoneProps {
   onPickFile: () => void;
@@ -24,7 +24,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   const hasFile = Boolean(fileName);
 
   return (
-    <View style={{ paddingVertical: 0 }}>
+    <View>
       {/* Dropzone */}
       {!hasFile && (
         <TouchableOpacity
@@ -46,7 +46,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             name="file-upload"
             size={28}
             color={colors.textMuted}
-            style={{ marginBottom: 6 }}
+            style={styles.dropZoneIcon}
           />
           <Text style={[styles.dropZoneText, { color: colors.textSecondary }]}>
             Click to upload file
@@ -57,14 +57,13 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         </TouchableOpacity>
       )}
 
-      {/* File input + Clear button */}
+      {/* File name + Clear button */}
       <View style={styles.metaRow}>
-        <Text style={{ marginBottom: 4, fontWeight: '600', color: colors.textPrimary }}>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>
           File Name <Text style={{ color: colors.danger }}>*</Text>
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* File input */}
-          <View style={{ flex: 3 }}>
+        <View style={styles.inputRow}>
+          <View style={styles.inputWrap}>
             <SingleLineInput
               placeholderText="Select a file..."
               value={fileName ?? ''}
@@ -72,26 +71,16 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
               style={{ marginBottom: 0 }}
             />
           </View>
-
-          {/* Clear X button */}
-        {hasFile && (
-          <Button
-            title="✕"
-            onPress={onClearFile}
-            variant="danger"
-            matchInputHeight
-            style={{
-              width: 40,  
-              height: 40,
-              padding: 0,
-            }}
-            textStyle={{
-              fontSize: 16,
-              marginTop: 5,
-              textAlign: 'center',   // horizontal centering
-            }}
-          />
-        )}
+          {hasFile && (
+            <Button
+              title="✕"
+              onPress={onClearFile}
+              variant="danger"
+              matchInputHeight
+              style={styles.clearBtn}
+              textStyle={styles.clearBtnText}
+            />
+          )}
         </View>
       </View>
     </View>
@@ -108,10 +97,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
+  dropZoneIcon: {
+    marginBottom: 6,
+  },
   dropZoneText: {
     fontSize: 14,
   },
   metaRow: {
     marginBottom: 12,
+  },
+  label: {
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputWrap: {
+    flex: 3,
+  },
+  clearBtn: {
+    width: 40,
+    height: 40,
+    padding: 0,
+  },
+  clearBtnText: {
+    fontSize: 16,
+    marginTop: 5,
+    textAlign: 'center',
   },
 });

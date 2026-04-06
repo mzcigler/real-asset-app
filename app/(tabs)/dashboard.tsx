@@ -1,13 +1,14 @@
-import AddPropertyPopup from '@/components/AddPropertyPopup';
+import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import FilterChips from '@/components/FilterChips';
 import PageContainer from '@/components/PageContainer';
-import PropertyScrollRow from '@/components/PropertyScrollRow';
+import PropertyScrollRow from '@/components/dashboard/PropertyScrollRow';
 import RenameModal from '@/components/RenameModal';
 import TaskItem from '@/components/TaskItem';
-import UploadExtractPopup from '@/components/UploadExtractPopup';
+import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
+import { supabase } from '@/services/supabase';
 import { deleteProperties, fetchProperties, renameProperty } from '@/services/propertyService';
 import {
   createTask,
@@ -22,8 +23,7 @@ import { sortByDueDate, toDateString } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
@@ -160,16 +160,14 @@ export default function DashboardScreen() {
 
   return (
     <PageContainer>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-        <Text style={{ fontSize: 26, fontWeight: 'bold', flex: 1, color: colors.textPrimary }}>
-          My Dashboard
-        </Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.heading, { color: colors.textPrimary }]}>My Dashboard</Text>
         <TouchableOpacity
           onPress={() => setUploadVisible(true)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.primary }}
+          style={[styles.uploadBtn, { backgroundColor: colors.primary }]}
         >
           <MaterialIcons name="cloud-upload" size={16} color="#fff" />
-          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Upload Doc</Text>
+          <Text style={styles.uploadBtnText}>Upload Doc</Text>
         </TouchableOpacity>
       </View>
 
@@ -188,7 +186,7 @@ export default function DashboardScreen() {
       {loadingProperties ? (
         <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
       ) : properties.length === 0 ? (
-        <Text style={{ color: colors.textMuted, marginBottom: 8 }}>No properties yet.</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No properties yet.</Text>
       ) : (
         <PropertyScrollRow
           properties={properties}
@@ -227,7 +225,7 @@ export default function DashboardScreen() {
       )}
 
       {/* File filter chips — only when a property is selected and it has >1 unique files */}
-      {!loadingTasks && propertyFilter !== null && filesForProperty.length > 1 && (
+      {!loadingTasks && propertyFilter !== null && filesForProperty.length > 0 && (
         <FilterChips
           options={[
             { label: 'All files', value: null },
@@ -244,7 +242,7 @@ export default function DashboardScreen() {
       {loadingTasks ? (
         <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
       ) : displayedTasks.length === 0 ? (
-        <Text style={{ color: colors.textMuted, marginBottom: 8 }}>No upcoming tasks.</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No upcoming tasks.</Text>
       ) : (
         displayedTasks.map((task) => (
           <TaskItem
@@ -329,22 +327,22 @@ type SectionHeaderProps = {
 function SectionHeader({ title, selectionMode, selectedCount, onAdd, onCancelSelection, onDeleteSelected }: SectionHeaderProps) {
   const { colors } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 8 }}>
-      <Text style={{ fontSize: 18, fontWeight: '600', flex: 1, color: colors.textPrimary }}>{title}</Text>
+    <View style={styles.sectionRow}>
+      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
       {selectionMode ? (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={styles.selectionBtns}>
           <TouchableOpacity
             onPress={onCancelSelection}
-            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.borderLight }}
+            style={[styles.selectionCancelBtn, { backgroundColor: colors.borderLight }]}
           >
-            <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+            <Text style={[styles.selectionBtnText, { color: colors.textSecondary }]}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onDeleteSelected}
             disabled={selectedCount === 0}
-            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: selectedCount > 0 ? colors.danger : colors.dangerDisabled }}
+            style={[styles.selectionDeleteBtn, { backgroundColor: selectedCount > 0 ? colors.danger : colors.dangerDisabled }]}
           >
-            <Text style={{ fontSize: 13, color: '#fff', fontWeight: '600' }}>
+            <Text style={[styles.selectionBtnText, { color: '#fff' }]}>
               Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
             </Text>
           </TouchableOpacity>
@@ -352,7 +350,7 @@ function SectionHeader({ title, selectionMode, selectedCount, onAdd, onCancelSel
       ) : (
         <TouchableOpacity
           onPress={onAdd}
-          style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
         >
           <MaterialIcons name="add" size={20} color="#fff" />
         </TouchableOpacity>
@@ -360,3 +358,68 @@ function SectionHeader({ title, selectionMode, selectedCount, onAdd, onCancelSel
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  uploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  uploadBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+  },
+  selectionBtns: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  selectionCancelBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  selectionDeleteBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  selectionBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  addBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    marginBottom: 8,
+  },
+});

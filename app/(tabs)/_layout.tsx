@@ -1,5 +1,5 @@
 import AppHeader from '@/components/AppHeader';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';

@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -17,20 +17,13 @@ export function DateInput({ value, onChange }: Props) {
     <View>
       <TouchableOpacity
         onPress={() => setVisible(true)}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-          borderWidth: 1,
+        style={[styles.trigger, {
           borderColor: colors.inputBorder,
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          paddingVertical: 8,
           backgroundColor: colors.inputBackground,
-        }}
+        }]}
       >
         <MaterialIcons name="calendar-today" size={14} color={colors.textMuted} />
-        <Text style={{ fontSize: 13, color: value ? colors.textPrimary : colors.inputPlaceholder, flex: 1 }}>
+        <Text style={[styles.dateText, { color: value ? colors.textPrimary : colors.inputPlaceholder }]}>
           {value ? value.toISOString().split('T')[0] : 'Due date (optional)'}
         </Text>
         {value && (
@@ -54,3 +47,19 @@ export function DateInput({ value, onChange }: Props) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  trigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  dateText: {
+    fontSize: 13,
+    flex: 1,
+  },
+});

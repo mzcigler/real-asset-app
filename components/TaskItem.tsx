@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { DateInput } from './DateInput';
 import { useTheme } from '@/theme/ThemeContext';
 import { TaskType } from '@/types';
@@ -46,7 +46,6 @@ export default function TaskItem({
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
   }, [task]);
 
-  // Exit editing when selection mode activates
   useEffect(() => {
     if (selectionMode) setEditing(false);
   }, [selectionMode]);
@@ -65,71 +64,54 @@ export default function TaskItem({
 
   return (
     <View
-      style={{
-        borderWidth: selected ? 2 : 1,
-        borderColor: selected ? colors.info : colors.border,
-        borderRadius: 10,
-        backgroundColor: colors.surface,
-        marginBottom: 6,
-        overflow: 'hidden',
-      }}
+      style={[
+        styles.card,
+        {
+          borderWidth: selected ? 2 : 1,
+          borderColor: selected ? colors.info : colors.border,
+          backgroundColor: colors.surface,
+        },
+      ]}
     >
       {editing ? (
-        <View style={{ padding: 12, gap: 8 }}>
+        <View style={styles.editContainer}>
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="Task title"
             placeholderTextColor={colors.inputPlaceholder}
-            style={{
-              fontWeight: '600',
-              fontSize: 14,
-              borderWidth: 1,
+            style={[styles.editInput, {
               borderColor: colors.inputBorder,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 7,
               color: colors.textPrimary,
               backgroundColor: colors.inputBackground,
-            }}
+            }]}
           />
           <TextInput
             value={description}
             onChangeText={setDescription}
             placeholder="Description (optional)"
             placeholderTextColor={colors.inputPlaceholder}
-            style={{
-              fontSize: 13,
-              borderWidth: 1,
+            style={[styles.editInput, {
               borderColor: colors.inputBorder,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 7,
               color: colors.textSecondary,
               backgroundColor: colors.inputBackground,
-            }}
+            }]}
           />
           <DateInput value={dueDate} onChange={(date: Date | null) => setDueDate(date)} />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={styles.editBtnRow}>
             <TouchableOpacity
               onPress={handleSave}
-              style={{
-                flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                gap: 4, backgroundColor: colors.success, borderRadius: 8, paddingVertical: 7,
-              }}
+              style={[styles.editBtn, { backgroundColor: colors.success }]}
             >
               <MaterialIcons name="check" size={14} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Save</Text>
+              <Text style={[styles.editBtnText, { color: '#fff' }]}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCancel}
-              style={{
-                flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                gap: 4, backgroundColor: colors.borderLight, borderRadius: 8, paddingVertical: 7,
-              }}
+              style={[styles.editBtn, { backgroundColor: colors.borderLight }]}
             >
               <MaterialIcons name="close" size={14} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Cancel</Text>
+              <Text style={[styles.editBtnText, { color: colors.textMuted }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -139,48 +121,48 @@ export default function TaskItem({
           onLongPress={!selectionMode ? onLongPress : undefined}
           delayLongPress={400}
           activeOpacity={selectionMode ? 0.7 : 1}
-          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 }}
+          style={styles.viewRow}
         >
           {selectionMode ? (
             <View
-              style={{
-                width: 20, height: 20, borderRadius: 10, marginRight: 10, flexShrink: 0,
-                backgroundColor: selected ? colors.info : colors.surface,
-                borderWidth: 2, borderColor: selected ? colors.info : colors.inputBorder,
-                alignItems: 'center', justifyContent: 'center',
-              }}
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: selected ? colors.info : colors.surface,
+                  borderColor: selected ? colors.info : colors.inputBorder,
+                },
+              ]}
             >
               {selected && <MaterialIcons name="check" size={12} color="#fff" />}
             </View>
           ) : (
             <View
-              style={{
-                width: 11, height: 11, borderRadius: 6,
-                backgroundColor: getUrgencyColor(dueDate, colors),
-                marginRight: 10, flexShrink: 0,
-              }}
+              style={[
+                styles.urgencyDot,
+                { backgroundColor: getUrgencyColor(dueDate, colors) },
+              ]}
             />
           )}
 
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={{ fontWeight: '600', fontSize: 14, color: colors.textPrimary }}>{task.title}</Text>
+          <View style={styles.content}>
+            <Text style={[styles.taskTitle, { color: colors.textPrimary }]}>{task.title}</Text>
             {task.description ? (
-              <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 1 }} numberOfLines={1}>
+              <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={1}>
                 {task.description}
               </Text>
             ) : null}
             {(dueDate || propertyName) ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3, gap: 4 }}>
+              <View style={styles.metaRow}>
                 {dueDate ? (
-                  <Text style={{ fontSize: 11, color: colors.textDisabled }}>
+                  <Text style={[styles.metaText, { color: colors.textDisabled }]}>
                     Due {dueDate.toISOString().split('T')[0]}
                   </Text>
                 ) : null}
                 {dueDate && propertyName ? (
-                  <Text style={{ fontSize: 11, color: colors.border }}>·</Text>
+                  <Text style={[styles.metaText, { color: colors.border }]}>·</Text>
                 ) : null}
                 {propertyName ? (
-                  <Text style={{ fontSize: 11, color: colors.textDisabled }}>{propertyName}</Text>
+                  <Text style={[styles.metaText, { color: colors.textDisabled }]}>{propertyName}</Text>
                 ) : null}
               </View>
             ) : null}
@@ -188,10 +170,10 @@ export default function TaskItem({
 
           {!readOnly && !selectionMode && (
             <>
-              <TouchableOpacity onPress={() => setEditing(true)} style={{ padding: 6 }} hitSlop={6}>
+              <TouchableOpacity onPress={() => setEditing(true)} style={styles.iconBtn} hitSlop={6}>
                 <MaterialIcons name="edit" size={15} color={colors.textDisabled} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onDelete} style={{ padding: 6 }} hitSlop={6}>
+              <TouchableOpacity onPress={onDelete} style={styles.iconBtn} hitSlop={6}>
                 <MaterialIcons name="delete-outline" size={15} color={colors.border} />
               </TouchableOpacity>
             </>
@@ -201,3 +183,87 @@ export default function TaskItem({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 10,
+    marginBottom: 6,
+    overflow: 'hidden',
+  },
+  editContainer: {
+    padding: 12,
+    gap: 8,
+  },
+  editInput: {
+    fontWeight: '600',
+    fontSize: 14,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  editBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderRadius: 8,
+    paddingVertical: 7,
+  },
+  editBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  viewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 10,
+    flexShrink: 0,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  urgencyDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    marginRight: 10,
+    flexShrink: 0,
+  },
+  content: {
+    flex: 1,
+    marginRight: 8,
+  },
+  taskTitle: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  taskDesc: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 11,
+  },
+  iconBtn: {
+    padding: 6,
+  },
+});

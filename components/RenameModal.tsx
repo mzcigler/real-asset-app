@@ -43,46 +43,33 @@ export default function RenameModal({
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }]}>
-        <View style={{ width: 320, backgroundColor: colors.surface, borderRadius: 16, padding: 24 }}>
-          <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 14, color: colors.textPrimary }}>
-            {title}
-          </Text>
+      <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.box, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
           <TextInput
             value={value}
             onChangeText={setValue}
             autoFocus
             onSubmitEditing={handleSave}
-            style={{
-              borderWidth: 1,
+            style={[styles.input, {
               borderColor: colors.inputBorder,
-              borderRadius: 8,
-              padding: 10,
-              fontSize: 15,
-              marginBottom: 16,
               color: colors.textPrimary,
               backgroundColor: colors.inputBackground,
-            }}
+            }]}
           />
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={styles.row}>
             <TouchableOpacity
               onPress={handleSave}
               disabled={!value.trim()}
-              style={{
-                flex: 1,
-                backgroundColor: value.trim() ? colors.info : colors.border,
-                borderRadius: 8,
-                paddingVertical: 10,
-                alignItems: 'center',
-              }}
+              style={[styles.btn, { backgroundColor: value.trim() ? colors.info : colors.border }]}
             >
-              <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
+              <Text style={[styles.btnText, { color: '#fff' }]}>Save</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onClose}
-              style={{ flex: 1, backgroundColor: colors.borderLight, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
+              style={[styles.btn, { backgroundColor: colors.borderLight }]}
             >
-              <Text style={{ color: colors.textSecondary, fontWeight: '500' }}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -90,3 +77,43 @@ export default function RenameModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  box: {
+    width: 320,
+    borderRadius: 16,
+    padding: 24,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 14,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  btn: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  btnText: {
+    fontWeight: '600',
+  },
+  cancelText: {
+    fontWeight: '500',
+  },
+});

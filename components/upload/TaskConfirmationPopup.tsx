@@ -1,9 +1,9 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Button from './Button';
-import { LoadingModal } from './LoadingModal';
-import TaskItem from './TaskItem';
+import Button from '@/components/Button';
+import { LoadingModal } from '@/components/LoadingModal';
+import TaskItem from '@/components/TaskItem';
 import { useTheme } from '@/theme/ThemeContext';
 import { TaskType } from '@/types';
 
@@ -54,22 +54,13 @@ export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fi
 
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }]}>
-        <View
-          style={{
-            width: 500,
-            maxWidth: '90%',
-            backgroundColor: colors.surface,
-            borderRadius: 16,
-            padding: 24,
-            maxHeight: '80%',
-          }}
-        >
-          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: colors.textPrimary }}>
+      <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.box, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>
             Confirm Extracted Tasks
           </Text>
 
-          <ScrollView style={{ marginBottom: 12 }}>
+          <ScrollView style={styles.list}>
             {tasks.map((task, index) => (
               <TaskItem
                 key={index}
@@ -88,7 +79,7 @@ export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fi
             style={{ marginBottom: 12 }}
           />
 
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={styles.btnRow}>
             <Button
               title="Confirm"
               onPress={handleConfirm}
@@ -111,3 +102,29 @@ export default function TaskConfirmationPopup({ visible, tasks: initialTasks, fi
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  box: {
+    width: 500,
+    maxWidth: '90%',
+    borderRadius: 16,
+    padding: 24,
+    maxHeight: '80%',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  list: {
+    marginBottom: 12,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+});

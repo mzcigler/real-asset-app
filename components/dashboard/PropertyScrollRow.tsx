@@ -1,8 +1,8 @@
-import PropertySquareCard from '@/components/PropertySquareCard';
+import PropertySquareCard from './PropertySquareCard';
 import { useEffect, useRef, useState } from 'react';
-import { PanResponder, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { PanResponder, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { MAX_WIDTH, SCREEN_PADDING } from '@/constants/layout';
+import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { Property } from '@/types';
 
 type Props = {
@@ -30,7 +30,6 @@ export default function PropertyScrollRow({
   const [scrollX, setScrollX] = useState(0);
   const [contentWidth, setContentWidth] = useState(1);
 
-  // Keep refs in sync for drag handlers (avoid stale closures)
   const scrollXRef = useRef(0);
   const contentWidthRef = useRef(1);
   const containerWidthRef = useRef(containerWidth);
@@ -45,7 +44,6 @@ export default function PropertyScrollRow({
   const maxScroll = contentWidth - containerWidth;
   const thumbLeft = canScroll && maxThumbLeft > 0 ? (scrollX / maxScroll) * maxThumbLeft : 0;
 
-  // Web: mouse drag on scrollbar thumb
   const onThumbMouseDown = Platform.OS === 'web'
     ? (e: any) => {
         e.preventDefault();
@@ -71,7 +69,6 @@ export default function PropertyScrollRow({
       }
     : undefined;
 
-  // Native: PanResponder drag
   const thumbLeftAtGestureStart = useRef(0);
   const panResponder = useRef(
     PanResponder.create({
@@ -96,13 +93,13 @@ export default function PropertyScrollRow({
     : panResponder.panHandlers;
 
   return (
-    <View style={{ marginBottom: 4, width: containerWidth }}>
+    <View style={[styles.container, { width: containerWidth }]}>
       <ScrollView
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ width: containerWidth }}
-        contentContainerStyle={{ gap: 12, paddingRight: 4 }}
+        contentContainerStyle={styles.scrollContent}
         onScroll={(e) => setScrollX(e.nativeEvent.contentOffset.x)}
         onContentSizeChange={(w) => setContentWidth(w)}
         scrollEventThrottle={16}
@@ -124,31 +121,44 @@ export default function PropertyScrollRow({
       </ScrollView>
 
       {canScroll && (
-        <View
-          style={{
-            height: TRACK_HEIGHT,
-            backgroundColor: colors.scrollTrack,
-            borderRadius: TRACK_HEIGHT / 2,
-            marginTop: 10,
-            marginHorizontal: 2,
-          }}
-        >
+        <View style={[styles.track, { backgroundColor: colors.scrollTrack }]}>
           <View
             {...thumbProps}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: thumbLeft,
-              width: thumbWidth,
-              height: TRACK_HEIGHT,
-              backgroundColor: colors.scrollThumb,
-              borderRadius: TRACK_HEIGHT / 2,
-              cursor: 'grab' as any,
-              userSelect: 'none' as any,
-            }}
+            style={[
+              styles.thumb,
+              {
+                left: thumbLeft,
+                width: thumbWidth,
+                backgroundColor: colors.scrollThumb,
+              },
+            ]}
           />
         </View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 4,
+  },
+  scrollContent: {
+    gap: 12,
+    paddingRight: 4,
+  },
+  track: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    marginTop: 10,
+    marginHorizontal: 2,
+  },
+  thumb: {
+    position: 'absolute',
+    top: 0,
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    cursor: 'grab' as any,
+    userSelect: 'none' as any,
+  },
+});

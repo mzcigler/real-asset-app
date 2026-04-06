@@ -2,11 +2,11 @@ import Button from '@/components/Button';
 import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
 import ScreenWrapper from '@/components/ScreenWrapper';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
@@ -29,19 +29,13 @@ export default function LoginScreen() {
 
   return (
     <ScreenWrapper>
-      {/* Theme toggle */}
-      <TouchableOpacity
-        onPress={toggleTheme}
-        style={{ position: 'absolute', top: 16, right: 16, padding: 8 }}
-      >
-        <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
+      <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
+        <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
       </TouchableOpacity>
 
-      <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.textPrimary }}>
-        Login
-      </Text>
+      <Text style={[styles.heading, { color: colors.textPrimary }]}>Login</Text>
 
-      <View style={{ width: '100%', maxWidth: 320 }}>
+      <View style={styles.form}>
         <SingleLineInput
           placeholderText="Email"
           value={email}
@@ -56,7 +50,6 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
-
         <Button
           title="Login"
           onPress={handleLogin}
@@ -85,3 +78,24 @@ export default function LoginScreen() {
     </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  themeToggle: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+  },
+  themeToggleIcon: {
+    fontSize: 20,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 24,
+  },
+  form: {
+    width: '100%',
+    maxWidth: 320,
+  },
+});

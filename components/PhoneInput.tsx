@@ -1,6 +1,6 @@
 import { SingleLineInput } from '@/components/Inputs';
 import { useTheme } from '@/theme/ThemeContext';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 type PhoneInputProps = {
   areaCode: string;
@@ -13,28 +13,15 @@ export default function PhoneInput({ areaCode, setAreaCode, phone, setPhone }: P
   const { colors } = useTheme();
 
   return (
-    <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center' }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 78,
-          marginRight: 8,
-          marginBottom: 12,
-          borderWidth: 1,
-          borderColor: colors.inputBorder,
-          borderRadius: 8,
-          backgroundColor: colors.inputBackground,
-          paddingVertical: 10,
-          paddingHorizontal: 10,
-        }}
-      >
-        <Text style={{ fontSize: 14, marginRight: 4 }}>🇨🇦</Text>
-        <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 14 }}>{areaCode}</Text>
+    <View style={styles.row}>
+      <View style={[styles.codeBox, {
+        borderColor: colors.inputBorder,
+        backgroundColor: colors.inputBackground,
+      }]}>
+        <Text style={styles.flag}>🇨🇦</Text>
+        <Text style={[styles.codeText, { color: colors.textPrimary }]}>{areaCode}</Text>
       </View>
-
-      <View style={{ flex: 1 }}>
+      <View style={styles.phoneInput}>
         <SingleLineInput
           placeholderText="Phone Number"
           value={phone}
@@ -45,3 +32,34 @@ export default function PhoneInput({ areaCode, setAreaCode, phone, setPhone }: P
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+  },
+  codeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 78,
+    marginRight: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  flag: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  codeText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  phoneInput: {
+    flex: 1,
+  },
+});

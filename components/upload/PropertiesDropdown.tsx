@@ -1,10 +1,9 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
+import { INPUT_HEIGHT } from '@/theme/tokens';
 import { Picker } from '@react-native-picker/picker';
 import { useEffect, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
-
-const INPUT_HEIGHT = 40;
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 type PropertyDropdownProps = {
   userId: string;
@@ -28,46 +27,26 @@ export default function PropertyDropdown({ userId, selectedProperty, onSelect }:
 
   return (
     <>
-      <Text
-        style={{
-          fontWeight: '600',
-          marginTop: 6,
-          marginBottom: 6,
-          color: colors.textPrimary,
-        }}
-      >
+      <Text style={[styles.label, { color: colors.textPrimary }]}>
         Select Property:
       </Text>
 
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: colors.inputBorder,
-          borderRadius: 12,
-          overflow: 'hidden',
-          marginBottom: 12,
-          backgroundColor: colors.inputBackground,
-          height: INPUT_HEIGHT,
-          justifyContent: 'center',
-        }}
-      >
+      <View style={[styles.pickerWrap, {
+        borderColor: colors.inputBorder,
+        backgroundColor: colors.inputBackground,
+      }]}>
         <Picker
           selectedValue={selectedProperty ?? ''}
           onValueChange={(itemValue: string) => onSelect(itemValue || null)}
-          style={{
-            color: colors.textPrimary,       // text color for both themes
-            height: INPUT_HEIGHT,             // match container
-            paddingHorizontal: 12,            // padding inside picker
+          style={[styles.picker, {
+            color: colors.textPrimary,
             backgroundColor: colors.inputBackground,
             ...Platform.select({
-              ios: { paddingVertical: 0 },    // iOS tweaks
-              android: {},                     // Android uses paddingHorizontal
+              ios: { paddingVertical: 0 },
+              android: {},
             }),
-          }}
-          itemStyle={{
-            fontSize: 14,
-            color: colors.textPrimary,        // ensures text matches theme
-          }}
+          }]}
+          itemStyle={[styles.pickerItem, { color: colors.textPrimary }]}
         >
           <Picker.Item label="Select a property..." value="" />
           {properties.map((prop) => (
@@ -78,3 +57,26 @@ export default function PropertyDropdown({ userId, selectedProperty, onSelect }:
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  label: {
+    fontWeight: '600',
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  pickerWrap: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+    height: INPUT_HEIGHT,
+    justifyContent: 'center',
+  },
+  picker: {
+    height: INPUT_HEIGHT,
+    paddingHorizontal: 12,
+  },
+  pickerItem: {
+    fontSize: 14,
+  },
+});

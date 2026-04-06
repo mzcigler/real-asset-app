@@ -3,11 +3,11 @@ import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
 import PhoneInput from '@/components/PhoneInput';
 import ScreenWrapper from '@/components/ScreenWrapper';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -71,12 +71,10 @@ export default function RegisterScreen() {
 
   return (
     <ScreenWrapper>
-      <Text style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: colors.textPrimary }}>
-        Register
-      </Text>
+      <Text style={[styles.heading, { color: colors.textPrimary }]}>Register</Text>
 
-      <View style={{ width: '100%', maxWidth: 320 }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={styles.form}>
+        <View style={styles.nameRow}>
           <SingleLineInput
             placeholderText="First Name"
             value={firstName}
@@ -140,3 +138,19 @@ export default function RegisterScreen() {
     </ScreenWrapper>
   );
 }
+
+const styles = StyleSheet.create({
+  heading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 24,
+  },
+  form: {
+    width: '100%',
+    maxWidth: 320,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+});

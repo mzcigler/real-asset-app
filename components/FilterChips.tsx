@@ -1,5 +1,5 @@
 import { useTheme } from '@/theme/ThemeContext';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ChipOption = {
   label: string;
@@ -19,31 +19,32 @@ export default function FilterChips({ options, selected, onSelect }: Props) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ marginBottom: 10 }}
-      contentContainerStyle={{ paddingRight: 8 }}
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
     >
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={styles.row}>
         {options.map((opt) => {
           const isSelected = selected === opt.value;
           return (
             <TouchableOpacity
               key={opt.value ?? '__null__'}
               onPress={() => onSelect(opt.value)}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: isSelected ? colors.primary : colors.border,
-                backgroundColor: isSelected ? colors.primaryLight : 'transparent',
-              }}
+              style={[
+                styles.chip,
+                {
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? colors.primaryLight : 'transparent',
+                },
+              ]}
             >
               <Text
-                style={{
-                  fontSize: 13,
-                  color: isSelected ? colors.primary : colors.textSecondary,
-                  fontWeight: isSelected ? '600' : '400',
-                }}
+                style={[
+                  styles.chipText,
+                  {
+                    color: isSelected ? colors.primary : colors.textSecondary,
+                    fontWeight: isSelected ? '600' : '400',
+                  },
+                ]}
               >
                 {opt.label}
               </Text>
@@ -54,3 +55,25 @@ export default function FilterChips({ options, selected, onSelect }: Props) {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    marginBottom: 10,
+  },
+  scrollContent: {
+    paddingRight: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 13,
+  },
+});

@@ -1,12 +1,12 @@
-import { extractTasks } from '@/functions/ExtractTasksFromText';
-import { supabase } from '@/lib/supabase';
+import { extractTasks } from '@/services/extractionService';
+import { supabase } from '@/services/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 import { useEffect, useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
-import Button from './Button';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Button from '@/components/Button';
 import { FileUploadZone } from './FileUploadZone';
-import { MultiLineInput } from './Inputs';
-import { LoadingModal } from './LoadingModal';
+import { MultiLineInput } from '@/components/Inputs';
+import { LoadingModal } from '@/components/LoadingModal';
 import PropertyDropdown from './PropertiesDropdown';
 import TaskConfirmationPopup from './TaskConfirmationPopup';
 import { useTheme } from '@/theme/ThemeContext';
@@ -115,23 +115,14 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
 
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <ScrollView
-          style={{ backgroundColor: 'transparent' }}
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 500,
-              backgroundColor: colors.surface,
-              borderRadius: 16,
-              padding: 24,
-              alignSelf: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: colors.textPrimary }}>
+          <View style={[styles.box, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
               Upload a new file
             </Text>
 
@@ -148,10 +139,10 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
               onSelect={setSelectedProperty}
             />
 
-            <Text style={{ fontWeight: '600', marginTop: 6, marginBottom: 2, color: colors.textPrimary }}>
+            <Text style={[styles.descLabel, { color: colors.textPrimary }]}>
               Document description:
             </Text>
-            <Text style={{ fontSize: 12, marginBottom: 6, color: colors.textMuted, lineHeight: 18 }}>
+            <Text style={[styles.descHint, { color: colors.textMuted }]}>
               Include a basic description and/or specific tasks you want extracted. Leave blank to auto-extract from the document.
             </Text>
 
@@ -169,12 +160,7 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
               fullWidth
               style={{ marginBottom: 10 }}
             />
-            <Button
-              title="Cancel"
-              onPress={handleClose}
-              variant="secondary"
-              fullWidth
-            />
+            <Button title="Cancel" onPress={handleClose} variant="secondary" fullWidth />
 
             <LoadingModal
               visible={uploading || extracting}
@@ -198,3 +184,41 @@ export default function UploadExtractPopup({ visible, userId, onClose, initialPr
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scroll: {
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  box: {
+    width: '90%',
+    maxWidth: 500,
+    borderRadius: 16,
+    padding: 24,
+    alignSelf: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  descLabel: {
+    fontWeight: '600',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  descHint: {
+    fontSize: 12,
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+});

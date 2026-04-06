@@ -3,11 +3,11 @@ import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
 import PageContainer from '@/components/PageContainer';
 import PhoneInput from '@/components/PhoneInput';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
@@ -21,7 +21,6 @@ export default function ProfileScreen() {
   const [areaCode, setAreaCode] = useState('+1');
   const [loading, setLoading] = useState(true);
 
-  // Popup state
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
   const [popupTitle, setPopupTitle] = useState('');
@@ -93,15 +92,11 @@ export default function ProfileScreen() {
 
   return (
     <PageContainer>
-      <Text style={{ fontSize: 26, fontWeight: 'bold', marginBottom: 16, color: colors.textPrimary }}>
-        My Profile
-      </Text>
+      <Text style={[styles.heading, { color: colors.textPrimary }]}>My Profile</Text>
 
-      <Text style={{ marginBottom: 12, fontWeight: '600', color: colors.textSecondary }}>
-        Email: {email}
-      </Text>
+      <Text style={[styles.email, { color: colors.textSecondary }]}>Email: {email}</Text>
 
-      <View style={{ flexDirection: 'row', width: '100%', gap: 8, marginBottom: 12 }}>
+      <View style={styles.nameRow}>
         <SingleLineInput
           placeholderText="First Name"
           value={firstName}
@@ -137,12 +132,7 @@ export default function ProfileScreen() {
         fullWidth
         style={{ marginBottom: 10 }}
       />
-      <Button
-        title="Logout"
-        onPress={handleLogout}
-        variant="danger"
-        fullWidth
-      />
+      <Button title="Logout" onPress={handleLogout} variant="danger" fullWidth />
 
       <InfoPopup
         visible={popupVisible}
@@ -157,3 +147,21 @@ export default function ProfileScreen() {
     </PageContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  heading: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  email: {
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 8,
+    marginBottom: 12,
+  },
+});

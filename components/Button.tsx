@@ -12,6 +12,7 @@
  */
 import { useTheme } from '@/theme/ThemeContext';
 import { Colors } from '@/theme/colors';
+import { INPUT_HEIGHT, buttonSizes } from '@/theme/tokens';
 import { ActivityIndicator, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 export type ButtonVariant =
@@ -39,8 +40,6 @@ type ButtonProps = {
   textStyle?: TextStyle;
 };
 
-const INPUT_HEIGHT = 40;
-
 function resolveColors(variant: ButtonVariant, colors: Colors, disabled: boolean) {
   if (disabled) {
     return { bg: colors.border, text: colors.textDisabled, borderColor: 'transparent', bordered: false };
@@ -54,12 +53,6 @@ function resolveColors(variant: ButtonVariant, colors: Colors, disabled: boolean
     case 'outline': return { bg: 'transparent', text: colors.info, borderColor: colors.info, bordered: true };
   }
 }
-
-const sizes = {
-  sm: { paddingVertical: 6, paddingHorizontal: 12, fontSize: 13, borderRadius: 8 },
-  md: { paddingVertical: 11, paddingHorizontal: 16, fontSize: 14, borderRadius: 10 },
-  lg: { paddingVertical: 14, paddingHorizontal: 20, fontSize: 16, borderRadius: 12 },
-};
 
 export default function Button({
   title,
@@ -75,7 +68,7 @@ export default function Button({
 }: ButtonProps) {
   const { colors } = useTheme();
   const c = resolveColors(variant, colors, disabled || loading);
-  const s = sizes[size];
+  const s = buttonSizes[size];
 
   return (
     <TouchableOpacity

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 import { DBTask, TaskRow } from '@/types';
 import { sortByDueDate, toDateString } from '@/utils/taskUtils';
 

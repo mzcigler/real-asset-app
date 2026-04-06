@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import '../global.css';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/services/supabase';
 
 export const unstable_settings = {
   anchor: '(tabs)',

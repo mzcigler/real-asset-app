@@ -11,9 +11,9 @@
  */
 
 import { ReactNode } from 'react';
-import { ScrollView, View, ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { MAX_WIDTH, SCREEN_PADDING } from '@/constants/layout';
+import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 
 type Props = {
   children: ReactNode;
@@ -26,14 +26,14 @@ export default function PageContainer({ children, noScroll = false, style }: Pro
   const { colors } = useTheme();
 
   const inner = (
-    <View style={[{ width: '100%', maxWidth: MAX_WIDTH }, style]}>
+    <View style={[styles.inner, style]}>
       {children}
     </View>
   );
 
   if (noScroll) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', padding: SCREEN_PADDING }}>
+      <View style={[styles.noScrollWrap, { backgroundColor: colors.background }]}>
         {inner}
       </View>
     );
@@ -41,10 +41,29 @@ export default function PageContainer({ children, noScroll = false, style }: Pro
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ alignItems: 'center', padding: SCREEN_PADDING }}
+      style={[styles.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.scrollContent}
     >
       {inner}
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  inner: {
+    width: '100%',
+    maxWidth: MAX_WIDTH,
+  },
+  noScrollWrap: {
+    flex: 1,
+    alignItems: 'center',
+    padding: SCREEN_PADDING,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    alignItems: 'center',
+    padding: SCREEN_PADDING,
+  },
+});

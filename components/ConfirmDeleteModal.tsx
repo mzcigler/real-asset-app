@@ -35,26 +35,22 @@ export default function ConfirmDeleteModal({
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' }]}>
-        <View style={{ width: 320, backgroundColor: colors.surface, borderRadius: 16, padding: 24 }}>
-          <Text style={{ fontSize: 17, fontWeight: '600', marginBottom: 8, color: colors.textPrimary }}>
-            {title}
-          </Text>
-          <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 20, lineHeight: 20 }}>
-            {message}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+      <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.box, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+          <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
+          <View style={styles.row}>
             <TouchableOpacity
               onPress={onConfirm}
-              style={{ flex: 1, backgroundColor: colors.danger, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
+              style={[styles.btn, { backgroundColor: colors.danger }]}
             >
-              <Text style={{ color: '#fff', fontWeight: '600' }}>{confirmLabel}</Text>
+              <Text style={[styles.btnText, { color: '#fff' }]}>{confirmLabel}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={onCancel}
-              style={{ flex: 1, backgroundColor: colors.borderLight, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}
+              style={[styles.btn, { backgroundColor: colors.borderLight }]}
             >
-              <Text style={{ color: colors.textSecondary, fontWeight: '500' }}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -62,3 +58,41 @@ export default function ConfirmDeleteModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  box: {
+    width: 320,
+    borderRadius: 16,
+    padding: 24,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 14,
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  btn: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  btnText: {
+    fontWeight: '600',
+  },
+  cancelText: {
+    fontWeight: '500',
+  },
+});

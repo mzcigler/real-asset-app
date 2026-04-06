@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 /** Keyboard-aware scroll wrapper for auth screens */
@@ -7,26 +7,33 @@ export default function ScreenWrapper({ children }: { children: React.ReactNode 
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.keyboardView}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         style={{ backgroundColor: colors.background }}
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 24,
-            backgroundColor: colors.background,
-          }}
-        >
+        <View style={[styles.inner, { backgroundColor: colors.background }]}>
           {children}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  inner: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+});

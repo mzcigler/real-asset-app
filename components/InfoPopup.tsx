@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 type PopupType = 'warning' | 'error' | 'success';
@@ -53,43 +53,29 @@ export default function InfoPopup({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable
-        style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.overlay, padding: 16 }}
+        style={[styles.backdrop, { backgroundColor: colors.overlay }]}
         onPress={dismissOnBackdropPress ? onClose : undefined}
       >
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            borderRadius: 12,
-            padding: 24,
-            width: '100%',
-            maxWidth: 320,
-          }}
-        >
+        <View style={[styles.box, { backgroundColor: colors.surface }]}>
           {title && (
-            <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center', color: titleColor }}>
-              {title}
-            </Text>
+            <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
           )}
-
-          <Text style={{ fontSize: 15, marginBottom: 20, textAlign: 'center', color: colors.textSecondary, lineHeight: 22 }}>
-            {message}
-          </Text>
-
-          <View style={{ gap: 10 }}>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+          <View style={styles.btnGroup}>
             {cancelText && (
               <TouchableOpacity
-                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: colors.borderLight, alignItems: 'center' }}
+                style={[styles.btn, { backgroundColor: colors.borderLight }]}
                 onPress={onClose}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{cancelText}</Text>
+                <Text style={[styles.btnText, { color: colors.textSecondary }]}>{cancelText}</Text>
               </TouchableOpacity>
             )}
             {showConfirm && (
               <TouchableOpacity
-                style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, backgroundColor: confirmBg, alignItems: 'center' }}
+                style={[styles.btn, { backgroundColor: confirmBg }]}
                 onPress={() => { onConfirm?.(); onClose(); }}
               >
-                <Text style={{ color: '#fff', fontWeight: '600' }}>{confirmText}</Text>
+                <Text style={[styles.btnText, { color: '#fff' }]}>{confirmText}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -98,3 +84,42 @@ export default function InfoPopup({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  box: {
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 15,
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  btnGroup: {
+    gap: 10,
+  },
+  btn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  btnText: {
+    fontWeight: '600',
+  },
+});
