@@ -1,4 +1,4 @@
-import ChipSelector from '@/components/ChipSelector';
+import Dropdown from '@/components/Dropdown';
 import { fetchFilesForProperty } from '@/services/fileService';
 import { useTheme } from '@/theme/ThemeContext';
 import { FileRecord, Property, TaskType } from '@/types';
@@ -65,14 +65,21 @@ export default function TaskItem({
     if (selectionMode) setEditing(false);
   }, [selectionMode]);
 
-  // Dashboard mode: fetch files when selected property changes
+  // Dashboard mode: fetch files for the current property.
+  // Captures selectedFileId at call-time to validate it against the loaded files
+  // without making it a reactive dependency (which would cause loops).
   useEffect(() => {
     if (!properties) return;
-    setSelectedFileId(null);
-    setAvailableFiles([]);
-    if (!selectedPropertyId) return;
-    fetchFilesForProperty(selectedPropertyId).then(setAvailableFiles);
-  }, [selectedPropertyId, properties]);
+    if (!selectedPropertyId) { setAvailableFiles([]); return; }
+    const fileIdAtLoad = selectedFileId;
+    fetchFilesForProperty(selectedPropertyId).then((files) => {
+      setAvailableFiles(files);
+      // Clear file only if it doesn't belong to this property
+      if (fileIdAtLoad && !files.some((f) => f.id === fileIdAtLoad)) {
+        setSelectedFileId(null);
+      }
+    });
+  }, [selectedPropertyId, properties]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Property detail mode: use pre-loaded files
   useEffect(() => {
@@ -110,26 +117,24 @@ export default function TaskItem({
           <Text style={[styles.editHeader, { color: colors.textPrimary }]}>Edit Task</Text>
 
           {properties && (
-            <ChipSelector
+            <Dropdown
               label="Property"
-              options={[
-                { label: 'None', value: null },
-                ...properties.map((p) => ({ label: p.name, value: p.id })),
-              ]}
+              options={properties.map((p) => ({ label: p.name, value: p.id }))}
               selected={selectedPropertyId}
               onSelect={setSelectedPropertyId}
+              placeholder="None"
+              size="sm"
             />
           )}
 
-          {availableFiles.length > 0 && (
-            <ChipSelector
+          {(availableFiles.length > 0 || selectedFileId) && (
+            <Dropdown
               label="Link to file"
-              options={[
-                { label: 'None', value: null },
-                ...availableFiles.map((f) => ({ label: f.file_name, value: f.id })),
-              ]}
+              options={availableFiles.map((f) => ({ label: f.file_name, value: f.id }))}
               selected={selectedFileId}
               onSelect={setSelectedFileId}
+              placeholder="None"
+              size="sm"
             />
           )}
 

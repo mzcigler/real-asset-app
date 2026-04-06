@@ -32,8 +32,37 @@ export async function renameProperty(id: string, name: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Delete one or more properties by ID */
-export async function deleteProperties(ids: string[]): Promise<void> {
+/**
+ * Delete one or more properties by ID.
+ * @param cascade - if true, also deletes all files (from storage + DB) and tasks for these properties;
+ *                  if false, unlinks tasks and files (sets property_id = null) and keeps them.
+ */
+export async function deleteProperties(ids: string[], cascade = true): Promise<void> {
+  if (cascade) {
+    // Fetch files so we can remove them from storage
+    const { data: files } = await supabase
+      .from('files')
+      .select('id, file_path')
+      .in('property_id', ids);
+
+    if (files && files.length > 0) {
+      const paths = files.map((f) => f.file_path).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from('user_files').remove(paths);
+      }
+      const fileIds = files.map((f) => f.id);
+      await supabase.from('tasks').delete().in('file_id', fileIds);
+      await supabase.from('files').delete().in('id', fileIds);
+    }
+
+    // Delete tasks directly linked to property (not via file)
+    await supabase.from('tasks').delete().in('property_id', ids);
+  } else {
+    // Unlink tasks and files — keep them, just remove the property reference
+    await supabase.from('tasks').update({ property_id: null, file_id: null }).in('property_id', ids);
+    await supabase.from('files').update({ property_id: null }).in('property_id', ids);
+  }
+
   const { error } = await supabase.from('properties').delete().in('id', ids);
   if (error) throw error;
 }

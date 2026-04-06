@@ -85,11 +85,15 @@ export default function DashboardScreen() {
     setRenamingProperty(null);
   };
 
-  const handleDeletePropertiesConfirm = async () => {
+  const handleDeletePropertiesConfirm = async (cascade?: boolean) => {
     const count = pendingDeletePropertyIds.length;
     setDeleteLoading(true);
-    await deleteProperties(pendingDeletePropertyIds);
+    await deleteProperties(pendingDeletePropertyIds, cascade ?? true);
     setProperties((prev) => prev.filter((p) => !pendingDeletePropertyIds.includes(p.id)));
+    if (cascade) {
+      // Reload tasks since cascaded deletes may have removed linked tasks and files
+      if (userId) loadTasks(userId);
+    }
     setPendingDeletePropertyIds([]);
     propertySel.cancel();
     setDeleteLoading(false);
@@ -304,6 +308,7 @@ export default function DashboardScreen() {
         onCancel={() => setPendingDeletePropertyIds([])}
         loading={deleteLoading}
         loadingLabel={pendingDeletePropertyIds.length === 1 ? 'Deleting property...' : `Deleting ${pendingDeletePropertyIds.length} properties...`}
+        cascadeLabel="Also delete all linked tasks and files"
       />
 
       <ConfirmDeleteModal

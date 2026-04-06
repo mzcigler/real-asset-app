@@ -9,23 +9,29 @@
  *     onConfirm={handleDelete}
  *     onCancel={() => setPendingIds([])}
  *     loading={deleteLoading}
+ *     cascadeLabel="Also delete linked tasks and files"
  *   />
  */
 
 import Button from '@/components/Button';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 type Props = {
   visible: boolean;
   title: string;
   message: string;
-  onConfirm: () => void;
+  onConfirm: (cascade?: boolean) => void;
   onCancel: () => void;
   confirmLabel?: string;
   loading?: boolean;
   loadingLabel?: string;
+  /** When provided, shows a checkbox the user can toggle before confirming */
+  cascadeLabel?: string;
+  /** Default state of the cascade checkbox (default: true) */
+  cascadeDefault?: boolean;
 };
 
 export default function ConfirmDeleteModal({
@@ -37,8 +43,11 @@ export default function ConfirmDeleteModal({
   confirmLabel = 'Delete',
   loading = false,
   loadingLabel = 'Deleting...',
+  cascadeLabel,
+  cascadeDefault = true,
 }: Props) {
   const { colors } = useTheme();
+  const [cascade, setCascade] = useState(cascadeDefault);
 
   // Freeze displayed content while the modal is closing (prevents "Delete 0" flash during fade-out)
   const [displayTitle, setDisplayTitle] = useState(title);
@@ -48,8 +57,9 @@ export default function ConfirmDeleteModal({
     if (visible) {
       setDisplayTitle(title);
       setDisplayMessage(message);
+      setCascade(cascadeDefault);
     }
-  }, [visible, title, message]);
+  }, [visible, title, message, cascadeDefault]);
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={loading ? undefined : onCancel}>
@@ -64,8 +74,26 @@ export default function ConfirmDeleteModal({
           ) : (
             <>
               <Text style={[styles.message, { color: colors.textMuted }]}>{displayMessage}</Text>
+              {cascadeLabel && (
+                <TouchableOpacity
+                  onPress={() => setCascade((v) => !v)}
+                  style={styles.checkRow}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    {
+                      backgroundColor: cascade ? colors.danger : 'transparent',
+                      borderColor: cascade ? colors.danger : colors.inputBorder,
+                    },
+                  ]}>
+                    {cascade && <MaterialIcons name="check" size={13} color="#fff" />}
+                  </View>
+                  <Text style={[styles.checkLabel, { color: colors.textSecondary }]}>{cascadeLabel}</Text>
+                </TouchableOpacity>
+              )}
               <View style={styles.row}>
-                <Button title={confirmLabel} onPress={onConfirm} variant="danger" style={{ flex: 1 }} />
+                <Button title={confirmLabel} onPress={() => onConfirm(cascade)} variant="danger" style={{ flex: 1 }} />
                 <Button title="Cancel" onPress={onCancel} variant="secondary" style={{ flex: 1 }} />
               </View>
             </>
@@ -93,8 +121,26 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: 16,
     lineHeight: 20,
+  },
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkLabel: {
+    fontSize: 14,
+    flex: 1,
   },
   row: {
     flexDirection: 'row',

@@ -114,15 +114,19 @@ export default function PropertyDetailScreen() {
 
   // ── File actions ──────────────────────────────────────────────────────────
 
-  const handleDeleteFilesConfirm = async () => {
+  const handleDeleteFilesConfirm = async (cascade?: boolean) => {
     const count = pendingDeleteFileIds.length;
     setDeleteLoading(true);
     const filesToDelete = files.filter((f) => pendingDeleteFileIds.includes(f.id));
-    await deleteFiles(filesToDelete);
+    await deleteFiles(filesToDelete, cascade ?? true);
     setFiles((prev) => prev.filter((f) => !pendingDeleteFileIds.includes(f.id)));
-    setTasks((prev) => prev.map((t) =>
-      t.file_id && pendingDeleteFileIds.includes(t.file_id) ? { ...t, file_id: null } : t,
-    ));
+    if (cascade) {
+      setTasks((prev) => prev.filter((t) => !t.file_id || !pendingDeleteFileIds.includes(t.file_id)));
+    } else {
+      setTasks((prev) => prev.map((t) =>
+        t.file_id && pendingDeleteFileIds.includes(t.file_id) ? { ...t, file_id: null } : t,
+      ));
+    }
     setPendingDeleteFileIds([]);
     fileSel.cancel();
     setDeleteLoading(false);
@@ -290,13 +294,14 @@ export default function PropertyDetailScreen() {
         title={pendingDeleteFileIds.length === 1 ? 'Delete File' : `Delete ${pendingDeleteFileIds.length} Files`}
         message={
           pendingDeleteFileIds.length === 1
-            ? `Are you sure you want to delete "${pendingFileName}"? All linked tasks will also be deleted. This cannot be undone.`
-            : `Are you sure you want to delete ${pendingDeleteFileIds.length} files and all their linked tasks? This cannot be undone.`
+            ? `Are you sure you want to delete "${pendingFileName}"? This cannot be undone.`
+            : `Are you sure you want to delete ${pendingDeleteFileIds.length} files? This cannot be undone.`
         }
         onConfirm={handleDeleteFilesConfirm}
         onCancel={() => setPendingDeleteFileIds([])}
         loading={deleteLoading}
         loadingLabel={pendingDeleteFileIds.length === 1 ? 'Deleting file...' : `Deleting ${pendingDeleteFileIds.length} files...`}
+        cascadeLabel="Also delete linked tasks"
       />
 
       <InfoPopup

@@ -67,17 +67,21 @@ export async function uploadPropertyFile(
 }
 
 /**
- * Delete files from storage and unlink them from any tasks (sets file_id to null).
- * Tasks themselves are preserved — they still exist under their property.
+ * Delete files from storage and their DB records.
+ * @param deleteLinkedTasks - if true, also deletes all tasks linked to these files;
+ *                            if false, unlinks tasks (sets file_id = null).
  */
-export async function deleteFiles(files: FileRecord[]): Promise<void> {
+export async function deleteFiles(files: FileRecord[], deleteLinkedTasks = true): Promise<void> {
   const paths = files.map((f) => f.file_path).filter(Boolean);
   if (paths.length > 0) {
     await supabase.storage.from('user_files').remove(paths);
   }
   const ids = files.map((f) => f.id);
-  // Unlink tasks from the deleted files (keep tasks, just remove the file reference)
-  await supabase.from('tasks').update({ file_id: null }).in('file_id', ids);
+  if (deleteLinkedTasks) {
+    await supabase.from('tasks').delete().in('file_id', ids);
+  } else {
+    await supabase.from('tasks').update({ file_id: null }).in('file_id', ids);
+  }
   await supabase.from('files').delete().in('id', ids);
 }
 

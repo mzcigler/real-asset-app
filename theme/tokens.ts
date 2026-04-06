@@ -18,6 +18,15 @@ export const buttonSizes = {
   lg: { paddingVertical: 14, paddingHorizontal: 20, fontSize: 16, borderRadius: 12 },
 } as const;
 
+/**
+ * Dropdown size presets — consumed by components/Dropdown.tsx.
+ */
+export const dropdownSizes = {
+  sm: { height: 34, fontSize: 13, borderRadius: 8,  labelSize: 12 },
+  md: { height: INPUT_HEIGHT, fontSize: 14, borderRadius: 10, labelSize: 12 },
+  lg: { height: 48, fontSize: 15, borderRadius: 12, labelSize: 13 },
+} as const;
+
 /** Border-radius scale */
 export const radius = {
   sm:   8,   // inputs, small buttons, chips
