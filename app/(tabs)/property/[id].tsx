@@ -2,6 +2,9 @@ import AddTaskModal from '@/components/AddTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import FileItem from '@/components/FileItem';
 import FilterChips from '@/components/FilterChips';
+import IconButton from '@/components/IconButton';
+import SegmentedControl from '@/components/SegmentedControl';
+import SelectionActions from '@/components/SelectionActions';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
 import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
@@ -86,25 +89,11 @@ export default function PropertyDetailScreen() {
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    // property_id stays fixed on the property detail screen; only file_id can change
-    await updateTask(
-      taskId,
-      updated.title,
-      updated.description ?? null,
-      updated.dueDate ?? null,
-      undefined, // don't change property_id
-      updated.fileId,
-    );
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, undefined, updated.fileId);
     setTasks((prev) =>
       sortByDueDate(prev.map((t) =>
         t.id === taskId
-          ? {
-              ...t,
-              title: updated.title,
-              description: updated.description ?? null,
-              due_date: toDateString(updated.dueDate ?? null),
-              file_id: updated.fileId ?? null,
-            }
+          ? { ...t, title: updated.title, description: updated.description ?? null, due_date: toDateString(updated.dueDate ?? null), file_id: updated.fileId ?? null }
           : t,
       )),
     );
@@ -123,7 +112,6 @@ export default function PropertyDetailScreen() {
     const filesToDelete = files.filter((f) => pendingDeleteFileIds.includes(f.id));
     await deleteFiles(filesToDelete);
     setFiles((prev) => prev.filter((f) => !pendingDeleteFileIds.includes(f.id)));
-    // Unlink tasks from deleted files (tasks are preserved with file_id = null)
     setTasks((prev) => prev.map((t) =>
       t.file_id && pendingDeleteFileIds.includes(t.file_id) ? { ...t, file_id: null } : t,
     ));
@@ -154,12 +142,12 @@ export default function PropertyDetailScreen() {
     ? tasks.filter((t) => t.file_id === taskFileFilter)
     : tasks;
 
-  const pendingTaskTitle = tasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
-  const pendingFileName = files.find((f) => f.id === pendingDeleteFileIds[0])?.file_name;
-
   const tasksTabLabel = taskFileFilter
     ? `Tasks (${displayedTasks.length}/${tasks.length})`
     : `Tasks (${tasks.length})`;
+
+  const pendingTaskTitle = tasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
+  const pendingFileName = files.find((f) => f.id === pendingDeleteFileIds[0])?.file_name;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -169,13 +157,8 @@ export default function PropertyDetailScreen() {
         <View style={styles.paddingWrap}>
           <View style={styles.maxWidth}>
 
-            {/* Back + property name */}
             <View style={styles.backRow}>
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/dashboard')}
-                style={styles.backBtn}
-                hitSlop={8}
-              >
+              <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backBtn} hitSlop={8}>
                 <MaterialIcons name="arrow-back" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
               <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>
@@ -183,53 +166,28 @@ export default function PropertyDetailScreen() {
               </Text>
             </View>
 
-            {/* Section tabs + action buttons */}
             <View style={styles.tabsRow}>
-              <View style={[styles.tabContainer, { backgroundColor: colors.borderLight }]}>
-                {(['tasks', 'files'] as Section[]).map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    onPress={() => setSection(s)}
-                    style={[
-                      styles.tabBtn,
-                      { backgroundColor: section === s ? colors.surface : 'transparent' },
-                    ]}
-                  >
-                    <Text style={[styles.tabText, {
-                      fontWeight: section === s ? '600' : '400',
-                      color: section === s ? colors.textPrimary : colors.textMuted,
-                    }]}>
-                      {s === 'tasks' ? tasksTabLabel : `Files (${files.length})`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
+              <SegmentedControl
+                style={styles.tabs}
+                tabs={[
+                  { label: tasksTabLabel, value: 'tasks' },
+                  { label: `Files (${files.length})`, value: 'files' },
+                ]}
+                selected={section}
+                onSelect={(v) => setSection(v as Section)}
+              />
               {activeSelectionMode ? (
-                <View style={styles.selectionBtns}>
-                  <TouchableOpacity
-                    onPress={handleCancelSelection}
-                    style={[styles.selectionCancelBtn, { backgroundColor: colors.borderLight }]}
-                  >
-                    <Text style={[styles.selectionBtnText, { color: colors.textSecondary }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleDeleteSelected}
-                    disabled={activeSelectedIds.length === 0}
-                    style={[styles.selectionDeleteBtn, { backgroundColor: activeSelectedIds.length > 0 ? colors.danger : colors.dangerDisabled }]}
-                  >
-                    <Text style={[styles.selectionBtnText, { color: '#fff' }]}>
-                      Delete{activeSelectedIds.length > 0 ? ` (${activeSelectedIds.length})` : ''}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                <SelectionActions
+                  selectedCount={activeSelectedIds.length}
+                  onCancel={handleCancelSelection}
+                  onDelete={handleDeleteSelected}
+                />
               ) : (
-                <TouchableOpacity
+                <IconButton
+                  icon="add"
+                  size={36}
                   onPress={() => section === 'tasks' ? setAddTaskVisible(true) : setUploadVisible(true)}
-                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                >
-                  <MaterialIcons name="add" size={22} color="#fff" />
-                </TouchableOpacity>
+                />
               )}
             </View>
 
@@ -237,23 +195,16 @@ export default function PropertyDetailScreen() {
               <ActivityIndicator size="large" color={colors.info} style={{ marginTop: 40 }} />
             ) : section === 'tasks' ? (
               <>
-                {!loading && (
-                  <FilterChips
-                    options={[
-                      { label: 'All', value: null },
-                      ...taskFileOptions.map((f) => ({
-                        label: f.file_name === '__manual__' ? 'Manual' : f.file_name,
-                        value: f.id,
-                      })),
-                    ]}
-                    selected={taskFileFilter}
-                    onSelect={setTaskFileFilter}
-                  />
-                )}
+                <FilterChips
+                  options={[
+                    { label: 'All', value: null },
+                    ...taskFileOptions.map((f) => ({ label: f.file_name, value: f.id })),
+                  ]}
+                  selected={taskFileFilter}
+                  onSelect={setTaskFileFilter}
+                />
                 {displayedTasks.length === 0 && (
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                    No tasks yet.
-                  </Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>No tasks yet.</Text>
                 )}
                 {displayedTasks.map((task) => (
                   <TaskItem
@@ -271,9 +222,7 @@ export default function PropertyDetailScreen() {
             ) : (
               <>
                 {files.length === 0 && (
-                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                    No files yet.
-                  </Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>No files yet.</Text>
                 )}
                 {files.map((file) => (
                   <FileItem
@@ -335,12 +284,8 @@ export default function PropertyDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
+  scroll: { flex: 1 },
   paddingWrap: {
     padding: SCREEN_PADDING,
     alignItems: 'center',
@@ -355,9 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 8,
   },
-  backBtn: {
-    padding: 4,
-  },
+  backBtn: { padding: 4 },
   propertyName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -369,46 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 8,
   },
-  tabContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    borderRadius: 10,
-    padding: 4,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  selectionBtns: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  selectionCancelBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  selectionDeleteBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  selectionBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  tabs: { flex: 1 },
   emptyText: {
     textAlign: 'center',
     marginTop: 16,

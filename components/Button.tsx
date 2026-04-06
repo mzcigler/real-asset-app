@@ -38,6 +38,8 @@ type ButtonProps = {
   matchInputHeight?: boolean;
   /** Optional text styling (for X button, etc) */
   textStyle?: TextStyle;
+  /** Icon rendered to the left of the title */
+  leftIcon?: React.ReactNode;
 };
 
 function resolveColors(variant: ButtonVariant, colors: Colors, disabled: boolean) {
@@ -65,6 +67,7 @@ export default function Button({
   style,
   matchInputHeight = false,
   textStyle,
+  leftIcon,
 }: ButtonProps) {
   const { colors } = useTheme();
   const c = resolveColors(variant, colors, disabled || loading);
@@ -93,6 +96,7 @@ export default function Button({
       ]}
     >
       {loading && <ActivityIndicator size="small" color={c.text} />}
+      {!loading && leftIcon}
 
       <Text
         style={[

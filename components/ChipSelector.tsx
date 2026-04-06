@@ -1,17 +1,15 @@
 /**
- * Reusable horizontal chip group.
- * Used wherever the user picks one value from a small set of options.
+ * Labeled chip selector — wraps FilterChips with an optional label above.
+ * Used in forms/modals where the user picks one value from a set.
+ * For standalone filter bars without a label, use FilterChips directly.
  */
+import FilterChips, { ChipOption } from './FilterChips';
 import { useTheme } from '@/theme/ThemeContext';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-export type ChipOption = {
-  label: string;
-  value: string | null;
-};
+export type { ChipOption };
 
 type Props = {
-  /** Optional label rendered above the chips */
   label?: string;
   options: ChipOption[];
   selected: string | null;
@@ -26,58 +24,17 @@ export default function ChipSelector({ label, options, selected, onSelect }: Pro
       {label && (
         <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       )}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {options.map((opt) => {
-          const isSelected = selected === opt.value;
-          return (
-            <TouchableOpacity
-              key={opt.value ?? '__null__'}
-              onPress={() => onSelect(opt.value)}
-              style={[
-                styles.chip,
-                {
-                  borderColor: isSelected ? colors.success : colors.border,
-                  backgroundColor: isSelected ? colors.successLight : 'transparent',
-                },
-              ]}
-            >
-              <Text style={[
-                styles.chipText,
-                {
-                  color: isSelected ? colors.success : colors.textSecondary,
-                  fontWeight: isSelected ? '600' : '400',
-                },
-              ]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <FilterChips options={options} selected={selected} onSelect={onSelect} variant="success" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 10,
+    marginBottom: 0,
   },
   label: {
     fontSize: 12,
-    marginBottom: 5,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingBottom: 2,
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  chipText: {
-    fontSize: 12,
+    marginBottom: 4,
   },
 });

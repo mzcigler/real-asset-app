@@ -2,7 +2,9 @@ import HorizontalScrollWithBar from '@/components/HorizontalScrollWithBar';
 import { useTheme } from '@/theme/ThemeContext';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-type ChipOption = {
+export type ChipVariant = 'primary' | 'success';
+
+export type ChipOption = {
   label: string;
   value: string | null;
 };
@@ -11,10 +13,14 @@ type Props = {
   options: ChipOption[];
   selected: string | null;
   onSelect: (v: string | null) => void;
+  variant?: ChipVariant;
 };
 
-export default function FilterChips({ options, selected, onSelect }: Props) {
+export default function FilterChips({ options, selected, onSelect, variant = 'primary' }: Props) {
   const { colors } = useTheme();
+
+  const activeColor = variant === 'success' ? colors.success : colors.primary;
+  const activeBg = variant === 'success' ? colors.successLight : colors.primaryLight;
 
   return (
     <HorizontalScrollWithBar style={styles.scroll} contentContainerStyle={styles.row}>
@@ -27,15 +33,15 @@ export default function FilterChips({ options, selected, onSelect }: Props) {
             style={[
               styles.chip,
               {
-                borderColor: isSelected ? colors.primary : colors.border,
-                backgroundColor: isSelected ? colors.primaryLight : 'transparent',
+                borderColor: isSelected ? activeColor : colors.border,
+                backgroundColor: isSelected ? activeBg : 'transparent',
               },
             ]}
           >
             <Text style={[
               styles.chipText,
               {
-                color: isSelected ? colors.primary : colors.textSecondary,
+                color: isSelected ? activeColor : colors.textSecondary,
                 fontWeight: isSelected ? '600' : '400',
               },
             ]}>

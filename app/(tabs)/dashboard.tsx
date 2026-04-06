@@ -1,28 +1,25 @@
 import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
+import Button from '@/components/Button';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import FilterChips from '@/components/FilterChips';
 import PageContainer from '@/components/PageContainer';
 import PropertyScrollRow from '@/components/dashboard/PropertyScrollRow';
 import RenameModal from '@/components/RenameModal';
+import SectionHeader from '@/components/SectionHeader';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteProperties, fetchProperties, renameProperty } from '@/services/propertyService';
-import {
-  createTask,
-  deleteTasks,
-  fetchAllTasksForUser,
-  updateTask,
-} from '@/services/taskService';
+import { createTask, deleteTasks, fetchAllTasksForUser, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
 import { Property, TaskRow, TaskType } from '@/types';
 import { sortByDueDate, toDateString } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
@@ -34,23 +31,17 @@ export default function DashboardScreen() {
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
-  // Filter state
   const [propertyFilter, setPropertyFilter] = useState<string | null>(null);
   const [fileFilter, setFileFilter] = useState<string | null>(null);
 
-  // Modal visibility
   const [uploadVisible, setUploadVisible] = useState(false);
   const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
 
-  // Rename property
   const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
-
-  // Delete confirmation targets
   const [pendingDeletePropertyIds, setPendingDeletePropertyIds] = useState<string[]>([]);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
 
-  // Selection modes
   const propertySel = useSelectionMode();
   const taskSel = useSelectionMode();
 
@@ -76,8 +67,6 @@ export default function DashboardScreen() {
     setAllTasks(await fetchAllTasksForUser(uid));
     setLoadingTasks(false);
   };
-
-  // ── Property filter resets file filter ────────────────────────────────────
 
   const handlePropertyFilterSelect = (v: string | null) => {
     setPropertyFilter(v);
@@ -111,14 +100,7 @@ export default function DashboardScreen() {
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(
-      taskId,
-      updated.title,
-      updated.description ?? null,
-      updated.dueDate ?? null,
-      updated.propertyId,
-      updated.fileId,
-    );
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, updated.propertyId, updated.fileId);
     setAllTasks((prev) =>
       sortByDueDate(prev.map((t) => {
         if (t.id !== taskId) return t;
@@ -145,7 +127,7 @@ export default function DashboardScreen() {
     taskSel.cancel();
   };
 
-  // ── Derived filter values ─────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const tasksFilteredByProperty = propertyFilter
     ? allTasks.filter((t) => t.property_id === propertyFilter)
@@ -155,7 +137,6 @@ export default function DashboardScreen() {
     ? tasksFilteredByProperty.filter((t) => t.file_id === fileFilter)
     : tasksFilteredByProperty;
 
-  // Unique files for the currently selected property (for file filter chips)
   const filesForProperty: { id: string; name: string }[] = propertyFilter
     ? Array.from(
         new Map(
@@ -166,8 +147,6 @@ export default function DashboardScreen() {
       )
     : [];
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
   const pendingDeletePropertyName = properties.find((p) => p.id === pendingDeletePropertyIds[0])?.name;
   const pendingDeleteTaskTitle = allTasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
 
@@ -177,16 +156,15 @@ export default function DashboardScreen() {
     <PageContainer>
       <View style={styles.headerRow}>
         <Text style={[styles.heading, { color: colors.textPrimary }]}>My Dashboard</Text>
-        <TouchableOpacity
+        <Button
+          title="Upload Doc"
+          leftIcon={<MaterialIcons name="cloud-upload" size={16} color="#fff" />}
+          variant="primary"
+          size="sm"
           onPress={() => setUploadVisible(true)}
-          style={[styles.uploadBtn, { backgroundColor: colors.primary }]}
-        >
-          <MaterialIcons name="cloud-upload" size={16} color="#fff" />
-          <Text style={styles.uploadBtnText}>Upload Doc</Text>
-        </TouchableOpacity>
+        />
       </View>
 
-      {/* ── My Properties ──────────────────────────────────────────────── */}
       <SectionHeader
         title="My Properties"
         selectionMode={propertySel.selectionMode}
@@ -215,7 +193,6 @@ export default function DashboardScreen() {
         />
       )}
 
-      {/* ── Upcoming Tasks ─────────────────────────────────────────────── */}
       <SectionHeader
         title="Upcoming Tasks"
         selectionMode={taskSel.selectionMode}
@@ -227,7 +204,6 @@ export default function DashboardScreen() {
         }}
       />
 
-      {/* Property filter chips */}
       {!loadingTasks && properties.length > 0 && (
         <FilterChips
           options={[
@@ -239,15 +215,11 @@ export default function DashboardScreen() {
         />
       )}
 
-      {/* File filter chips — only when a property is selected and it has >1 unique files */}
       {!loadingTasks && propertyFilter !== null && filesForProperty.length > 0 && (
         <FilterChips
           options={[
             { label: 'All files', value: null },
-            ...filesForProperty.map((f) => ({
-              label: f.name === '__manual__' ? 'Manual' : f.name,
-              value: f.id,
-            })),
+            ...filesForProperty.map((f) => ({ label: f.name, value: f.id })),
           ]}
           selected={fileFilter}
           onSelect={setFileFilter}
@@ -281,7 +253,6 @@ export default function DashboardScreen() {
         ))
       )}
 
-      {/* ── Modals ─────────────────────────────────────────────────────── */}
       <AddTaskModal
         visible={addTaskVisible}
         onClose={() => setAddTaskVisible(false)}
@@ -337,52 +308,6 @@ export default function DashboardScreen() {
   );
 }
 
-// ─── Section header with add / selection-mode buttons ───────────────────────
-
-type SectionHeaderProps = {
-  title: string;
-  selectionMode: boolean;
-  selectedCount: number;
-  onAdd: () => void;
-  onCancelSelection: () => void;
-  onDeleteSelected: () => void;
-};
-
-function SectionHeader({ title, selectionMode, selectedCount, onAdd, onCancelSelection, onDeleteSelected }: SectionHeaderProps) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.sectionRow}>
-      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {selectionMode ? (
-        <View style={styles.selectionBtns}>
-          <TouchableOpacity
-            onPress={onCancelSelection}
-            style={[styles.selectionCancelBtn, { backgroundColor: colors.borderLight }]}
-          >
-            <Text style={[styles.selectionBtnText, { color: colors.textSecondary }]}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onDeleteSelected}
-            disabled={selectedCount === 0}
-            style={[styles.selectionDeleteBtn, { backgroundColor: selectedCount > 0 ? colors.danger : colors.dangerDisabled }]}
-          >
-            <Text style={[styles.selectionBtnText, { color: '#fff' }]}>
-              Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          onPress={onAdd}
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-        >
-          <MaterialIcons name="add" size={20} color="#fff" />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
@@ -393,55 +318,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     flex: 1,
-  },
-  uploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  uploadBtnText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-  },
-  selectionBtns: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  selectionCancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  selectionDeleteBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  selectionBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  addBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   emptyText: {
     marginBottom: 8,
