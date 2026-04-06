@@ -1,5 +1,6 @@
 import AddTaskModal from '@/components/AddTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
+import InfoPopup from '@/components/InfoPopup';
 import FileItem from '@/components/FileItem';
 import FilterChips from '@/components/FilterChips';
 import IconButton from '@/components/IconButton';
@@ -15,10 +16,9 @@ import { createTask, deleteTasks, fetchTasksForProperty, updateTask } from '@/se
 import { useTheme } from '@/theme/ThemeContext';
 import { DBTask, FileRecord, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type Section = 'tasks' | 'files';
 
@@ -40,6 +40,8 @@ export default function PropertyDetailScreen() {
   const [taskFileFilter, setTaskFileFilter] = useState<string | null>(null);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
   const [pendingDeleteFileIds, setPendingDeleteFileIds] = useState<string[]>([]);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const taskSel = useSelectionMode();
   const fileSel = useSelectionMode();
@@ -100,15 +102,21 @@ export default function PropertyDetailScreen() {
   };
 
   const handleDeleteTasksConfirm = async () => {
+    const count = pendingDeleteTaskIds.length;
+    setDeleteLoading(true);
     await deleteTasks(pendingDeleteTaskIds);
     setTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
     setPendingDeleteTaskIds([]);
     taskSel.cancel();
+    setDeleteLoading(false);
+    setSuccessMessage(count === 1 ? 'Task deleted' : `${count} tasks deleted`);
   };
 
   // ── File actions ──────────────────────────────────────────────────────────
 
   const handleDeleteFilesConfirm = async () => {
+    const count = pendingDeleteFileIds.length;
+    setDeleteLoading(true);
     const filesToDelete = files.filter((f) => pendingDeleteFileIds.includes(f.id));
     await deleteFiles(filesToDelete);
     setFiles((prev) => prev.filter((f) => !pendingDeleteFileIds.includes(f.id)));
@@ -117,6 +125,8 @@ export default function PropertyDetailScreen() {
     ));
     setPendingDeleteFileIds([]);
     fileSel.cancel();
+    setDeleteLoading(false);
+    setSuccessMessage(count === 1 ? 'File deleted' : `${count} files deleted`);
   };
 
   const handleDownload = (filePath: string, fileName: string) => {
@@ -158,9 +168,14 @@ export default function PropertyDetailScreen() {
           <View style={styles.maxWidth}>
 
             <View style={styles.backRow}>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')} style={styles.backBtn} hitSlop={8}>
-                <MaterialIcons name="arrow-back" size={22} color={colors.textSecondary} />
-              </TouchableOpacity>
+              <IconButton
+                icon="arrow-back"
+                iconSize={22}
+                size={34}
+                onPress={() => router.push('/(tabs)/dashboard')}
+                iconColor={colors.textSecondary}
+                style={{ backgroundColor: 'transparent' }}
+              />
               <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>
                 {propertyName || 'Property'}
               </Text>
@@ -266,6 +281,8 @@ export default function PropertyDetailScreen() {
         }
         onConfirm={handleDeleteTasksConfirm}
         onCancel={() => setPendingDeleteTaskIds([])}
+        loading={deleteLoading}
+        loadingLabel={pendingDeleteTaskIds.length === 1 ? 'Deleting task...' : `Deleting ${pendingDeleteTaskIds.length} tasks...`}
       />
 
       <ConfirmDeleteModal
@@ -278,6 +295,17 @@ export default function PropertyDetailScreen() {
         }
         onConfirm={handleDeleteFilesConfirm}
         onCancel={() => setPendingDeleteFileIds([])}
+        loading={deleteLoading}
+        loadingLabel={pendingDeleteFileIds.length === 1 ? 'Deleting file...' : `Deleting ${pendingDeleteFileIds.length} files...`}
+      />
+
+      <InfoPopup
+        visible={!!successMessage}
+        type="success"
+        message={successMessage ?? ''}
+        onClose={() => setSuccessMessage(null)}
+        autoDismiss={2500}
+        showConfirm={false}
       />
     </View>
   );
@@ -300,7 +328,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 8,
   },
-  backBtn: { padding: 4 },
   propertyName: {
     fontSize: 20,
     fontWeight: 'bold',

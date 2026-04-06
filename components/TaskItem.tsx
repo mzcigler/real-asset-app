@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Button from './Button';
 import { DateInput } from './DateInput';
+import IconButton from './IconButton';
 
 type TaskItemProps = {
   task: TaskType;
@@ -157,8 +158,8 @@ export default function TaskItem({
           <DateInput value={dueDate} onChange={setDueDate} />
 
           <View style={styles.btnRow}>
-            <Button title="Save" onPress={handleSave} variant="success" style={{ flex: 1 }} />
-            <Button title="Cancel" onPress={handleCancel} variant="secondary" style={{ flex: 1 }} />
+            <Button title="Save" size="sm" onPress={handleSave} variant="success" style={{ flex: 1 }} />
+            <Button title="Cancel" size="sm" onPress={handleCancel} variant="secondary" style={{ flex: 1 }} />
           </View>
         </View>
       ) : (
@@ -211,12 +212,22 @@ export default function TaskItem({
 
           {!readOnly && !selectionMode && (
             <>
-              <TouchableOpacity onPress={() => setEditing(true)} style={styles.iconBtn} hitSlop={6}>
-                <MaterialIcons name="edit" size={15} color={colors.textDisabled} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onDelete} style={styles.iconBtn} hitSlop={6}>
-                <MaterialIcons name="delete-outline" size={15} color={colors.border} />
-              </TouchableOpacity>
+              <IconButton
+                icon="edit"
+                iconSize={15}
+                size={27}
+                onPress={() => setEditing(true)}
+                iconColor={colors.textDisabled}
+                style={{ backgroundColor: 'transparent' }}
+              />
+              <IconButton
+                icon="delete-outline"
+                iconSize={15}
+                size={27}
+                onPress={onDelete}
+                iconColor={colors.border}
+                style={{ backgroundColor: 'transparent' }}
+              />
             </>
           )}
         </TouchableOpacity>
@@ -296,8 +307,5 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
-  },
-  iconBtn: {
-    padding: 6,
   },
 });

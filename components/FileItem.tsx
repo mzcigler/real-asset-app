@@ -1,6 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import IconButton from './IconButton';
 
 type Props = {
   fileName: string;
@@ -63,9 +64,14 @@ export default function FileItem({ fileName, onOpen, onDelete, selected, selecti
       {!selectionMode && (
         <>
           <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
-          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
-            <MaterialIcons name="delete-outline" size={18} color={colors.border} />
-          </TouchableOpacity>
+          <IconButton
+            icon="delete-outline"
+            iconSize={18}
+            size={46}
+            onPress={onDelete}
+            iconColor={colors.border}
+            style={{ backgroundColor: 'transparent', borderRadius: 0 }}
+          />
         </>
       )}
     </View>
@@ -105,9 +111,5 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 36,
-  },
-  deleteBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
   },
 });

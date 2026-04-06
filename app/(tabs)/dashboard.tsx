@@ -3,6 +3,7 @@ import AddTaskModal from '@/components/AddTaskModal';
 import Button from '@/components/Button';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import FilterChips from '@/components/FilterChips';
+import InfoPopup from '@/components/InfoPopup';
 import PageContainer from '@/components/PageContainer';
 import PropertyScrollRow from '@/components/dashboard/PropertyScrollRow';
 import RenameModal from '@/components/RenameModal';
@@ -41,6 +42,8 @@ export default function DashboardScreen() {
   const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
   const [pendingDeletePropertyIds, setPendingDeletePropertyIds] = useState<string[]>([]);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const propertySel = useSelectionMode();
   const taskSel = useSelectionMode();
@@ -83,10 +86,14 @@ export default function DashboardScreen() {
   };
 
   const handleDeletePropertiesConfirm = async () => {
+    const count = pendingDeletePropertyIds.length;
+    setDeleteLoading(true);
     await deleteProperties(pendingDeletePropertyIds);
     setProperties((prev) => prev.filter((p) => !pendingDeletePropertyIds.includes(p.id)));
     setPendingDeletePropertyIds([]);
     propertySel.cancel();
+    setDeleteLoading(false);
+    setSuccessMessage(count === 1 ? 'Property deleted' : `${count} properties deleted`);
   };
 
   // ── Task actions ──────────────────────────────────────────────────────────
@@ -121,10 +128,14 @@ export default function DashboardScreen() {
   };
 
   const handleDeleteTasksConfirm = async () => {
+    const count = pendingDeleteTaskIds.length;
+    setDeleteLoading(true);
     await deleteTasks(pendingDeleteTaskIds);
     setAllTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
     setPendingDeleteTaskIds([]);
     taskSel.cancel();
+    setDeleteLoading(false);
+    setSuccessMessage(count === 1 ? 'Task deleted' : `${count} tasks deleted`);
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -291,6 +302,8 @@ export default function DashboardScreen() {
         }
         onConfirm={handleDeletePropertiesConfirm}
         onCancel={() => setPendingDeletePropertyIds([])}
+        loading={deleteLoading}
+        loadingLabel={pendingDeletePropertyIds.length === 1 ? 'Deleting property...' : `Deleting ${pendingDeletePropertyIds.length} properties...`}
       />
 
       <ConfirmDeleteModal
@@ -303,6 +316,17 @@ export default function DashboardScreen() {
         }
         onConfirm={handleDeleteTasksConfirm}
         onCancel={() => setPendingDeleteTaskIds([])}
+        loading={deleteLoading}
+        loadingLabel={pendingDeleteTaskIds.length === 1 ? 'Deleting task...' : `Deleting ${pendingDeleteTaskIds.length} tasks...`}
+      />
+
+      <InfoPopup
+        visible={!!successMessage}
+        type="success"
+        message={successMessage ?? ''}
+        onClose={() => setSuccessMessage(null)}
+        autoDismiss={2500}
+        showConfirm={false}
       />
     </PageContainer>
   );

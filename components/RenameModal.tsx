@@ -11,8 +11,9 @@
  *   />
  */
 
+import Button from '@/components/Button';
 import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 type Props = {
@@ -58,19 +59,8 @@ export default function RenameModal({
             }]}
           />
           <View style={styles.row}>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={!value.trim()}
-              style={[styles.btn, { backgroundColor: value.trim() ? colors.info : colors.border }]}
-            >
-              <Text style={[styles.btnText, { color: '#fff' }]}>Save</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onClose}
-              style={[styles.btn, { backgroundColor: colors.borderLight }]}
-            >
-              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-            </TouchableOpacity>
+            <Button title="Save" onPress={handleSave} variant="info" disabled={!value.trim()} style={{ flex: 1 }} />
+            <Button title="Cancel" onPress={onClose} variant="secondary" style={{ flex: 1 }} />
           </View>
         </View>
       </View>
@@ -103,17 +93,5 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 10,
-  },
-  btn: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  btnText: {
-    fontWeight: '600',
-  },
-  cancelText: {
-    fontWeight: '500',
   },
 });

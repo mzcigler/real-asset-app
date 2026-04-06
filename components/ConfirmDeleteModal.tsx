@@ -8,10 +8,13 @@
  *     message="Are you sure? This cannot be undone."
  *     onConfirm={handleDelete}
  *     onCancel={() => setPendingIds([])}
+ *     loading={deleteLoading}
  *   />
  */
 
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Button from '@/components/Button';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 type Props = {
@@ -21,6 +24,8 @@ type Props = {
   onConfirm: () => void;
   onCancel: () => void;
   confirmLabel?: string;
+  loading?: boolean;
+  loadingLabel?: string;
 };
 
 export default function ConfirmDeleteModal({
@@ -30,29 +35,41 @@ export default function ConfirmDeleteModal({
   onConfirm,
   onCancel,
   confirmLabel = 'Delete',
+  loading = false,
+  loadingLabel = 'Deleting...',
 }: Props) {
   const { colors } = useTheme();
 
+  // Freeze displayed content while the modal is closing (prevents "Delete 0" flash during fade-out)
+  const [displayTitle, setDisplayTitle] = useState(title);
+  const [displayMessage, setDisplayMessage] = useState(message);
+
+  useEffect(() => {
+    if (visible) {
+      setDisplayTitle(title);
+      setDisplayMessage(message);
+    }
+  }, [visible, title, message]);
+
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={loading ? undefined : onCancel}>
       <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.box, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
-          <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
-          <View style={styles.row}>
-            <TouchableOpacity
-              onPress={onConfirm}
-              style={[styles.btn, { backgroundColor: colors.danger }]}
-            >
-              <Text style={[styles.btnText, { color: '#fff' }]}>{confirmLabel}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onCancel}
-              style={[styles.btn, { backgroundColor: colors.borderLight }]}
-            >
-              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{displayTitle}</Text>
+          {loading ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={colors.danger} />
+              <Text style={[styles.loadingText, { color: colors.textMuted }]}>{loadingLabel}</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.message, { color: colors.textMuted }]}>{displayMessage}</Text>
+              <View style={styles.row}>
+                <Button title={confirmLabel} onPress={onConfirm} variant="danger" style={{ flex: 1 }} />
+                <Button title="Cancel" onPress={onCancel} variant="secondary" style={{ flex: 1 }} />
+              </View>
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -83,16 +100,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
-  btn: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
+  loadingRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    paddingTop: 4,
   },
-  btnText: {
-    fontWeight: '600',
-  },
-  cancelText: {
-    fontWeight: '500',
+  loadingText: {
+    fontSize: 14,
   },
 });

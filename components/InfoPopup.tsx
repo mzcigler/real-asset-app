@@ -1,5 +1,6 @@
+import Button, { ButtonVariant } from '@/components/Button';
 import { useEffect } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
 type PopupType = 'warning' | 'error' | 'success';
@@ -17,6 +18,12 @@ type Props = {
   autoDismiss?: number;
   dismissOnBackdropPress?: boolean;
 };
+
+function typeToVariant(type: PopupType): ButtonVariant {
+  if (type === 'success') return 'success';
+  if (type === 'warning') return 'warning';
+  return 'danger';
+}
 
 export default function InfoPopup({
   visible,
@@ -45,10 +52,7 @@ export default function InfoPopup({
     type === 'warning' ? colors.warning :
     colors.danger;
 
-  const confirmBg =
-    type === 'success' ? colors.success :
-    type === 'warning' ? colors.warning :
-    colors.danger;
+  const hasButtons = showConfirm || !!cancelText;
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -60,25 +64,24 @@ export default function InfoPopup({
           {title && (
             <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
           )}
-          <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
-          <View style={styles.btnGroup}>
-            {cancelText && (
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: colors.borderLight }]}
-                onPress={onClose}
-              >
-                <Text style={[styles.btnText, { color: colors.textSecondary }]}>{cancelText}</Text>
-              </TouchableOpacity>
-            )}
-            {showConfirm && (
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: confirmBg }]}
-                onPress={() => { onConfirm?.(); onClose(); }}
-              >
-                <Text style={[styles.btnText, { color: '#fff' }]}>{confirmText}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <Text style={[styles.message, { color: colors.textSecondary, marginBottom: hasButtons ? 20 : 0 }]}>
+            {message}
+          </Text>
+          {hasButtons && (
+            <View style={styles.btnGroup}>
+              {cancelText && (
+                <Button title={cancelText} onPress={onClose} variant="secondary" fullWidth />
+              )}
+              {showConfirm && (
+                <Button
+                  title={confirmText}
+                  onPress={() => { onConfirm?.(); onClose(); }}
+                  variant={typeToVariant(type)}
+                  fullWidth
+                />
+              )}
+            </View>
+          )}
         </View>
       </Pressable>
     </Modal>
@@ -106,20 +109,10 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 15,
-    marginBottom: 20,
     textAlign: 'center',
     lineHeight: 22,
   },
   btnGroup: {
     gap: 10,
-  },
-  btn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  btnText: {
-    fontWeight: '600',
   },
 });

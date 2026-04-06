@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { BREAKPOINT } from '@/theme/layout';
+import Button from '@/components/Button';
+import IconButton from '@/components/IconButton';
 
 export default function AppHeader() {
   const { width } = useWindowDimensions();
@@ -47,17 +49,30 @@ export default function AppHeader() {
             <NavLink label="Dashboard" active={isDashboard} onPress={() => navigate('/(tabs)/dashboard')} />
             <NavLink label="Profile" active={isProfile} onPress={() => navigate('/(tabs)/profile')} />
             <View style={[styles.navDivider, { backgroundColor: colors.border }]} />
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} colors={colors} />
-            <TouchableOpacity onPress={handleSignOut} style={styles.signOutBtn}>
-              <Text style={[styles.signOutText, { color: colors.danger }]}>Sign out</Text>
-            </TouchableOpacity>
+            <IconButton
+              icon={isDark ? 'light-mode' : 'dark-mode'}
+              onPress={toggleTheme}
+              iconColor={colors.textMuted}
+              style={{ backgroundColor: 'transparent' }}
+            />
+            <Button title="Sign out" onPress={handleSignOut} variant="outline" size="sm" />
           </View>
         ) : (
           <View style={styles.mobileRow}>
-            <ThemeToggle isDark={isDark} onToggle={toggleTheme} colors={colors} />
-            <TouchableOpacity onPress={() => setMenuOpen((v) => !v)} style={styles.menuBtn} hitSlop={8}>
-              <MaterialIcons name={menuOpen ? 'close' : 'menu'} size={26} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <IconButton
+              icon={isDark ? 'light-mode' : 'dark-mode'}
+              onPress={toggleTheme}
+              iconColor={colors.textMuted}
+              style={{ backgroundColor: 'transparent' }}
+            />
+            <IconButton
+              icon={menuOpen ? 'close' : 'menu'}
+              iconSize={26}
+              size={42}
+              onPress={() => setMenuOpen((v) => !v)}
+              iconColor={colors.textSecondary}
+              style={{ backgroundColor: 'transparent' }}
+            />
           </View>
         )}
       </View>
@@ -79,10 +94,14 @@ export default function AppHeader() {
               onPress={() => navigate('/(tabs)/profile')}
             />
             <View style={[styles.dropdownDivider, { backgroundColor: colors.borderLight }]} />
-            <TouchableOpacity onPress={handleSignOut} style={styles.logoutItem}>
-              <MaterialIcons name="logout" size={18} color={colors.danger} />
-              <Text style={[styles.logoutText, { color: colors.danger }]}>Sign out</Text>
-            </TouchableOpacity>
+            <Button
+              title="Sign out"
+              onPress={handleSignOut}
+              variant="danger"
+              size="sm"
+              leftIcon={<MaterialIcons name="logout" size={16} color="#fff" />}
+              style={styles.logoutItem}
+            />
           </View>
           <Pressable onPress={() => setMenuOpen(false)} style={styles.dismissOverlay} />
         </>
@@ -130,13 +149,6 @@ function DropdownItem({
   );
 }
 
-function ThemeToggle({ isDark, onToggle, colors }: { isDark: boolean; onToggle: () => void; colors: any }) {
-  return (
-    <TouchableOpacity onPress={onToggle} style={styles.themeBtn} hitSlop={8}>
-      <MaterialIcons name={isDark ? 'light-mode' : 'dark-mode'} size={20} color={colors.textMuted} />
-    </TouchableOpacity>
-  );
-}
 
 const styles = StyleSheet.create({
   zWrap: {
@@ -173,22 +185,10 @@ const styles = StyleSheet.create({
     height: 20,
     marginHorizontal: 8,
   },
-  signOutBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  signOutText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
   mobileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  menuBtn: {
-    padding: 8,
   },
   dropdown: {
     borderBottomWidth: 1,
@@ -205,10 +205,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 12,
-  },
-  logoutText: {
-    fontSize: 15,
-    fontWeight: '500',
   },
   dismissOverlay: {
     position: 'absolute',

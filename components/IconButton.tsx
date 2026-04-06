@@ -14,6 +14,8 @@ type Props = {
   iconSize?: number;
   disabled?: boolean;
   style?: ViewStyle;
+  /** Override the resolved icon color */
+  iconColor?: string;
 };
 
 function resolveBg(variant: ButtonVariant, colors: Colors, disabled: boolean): string {
@@ -22,6 +24,7 @@ function resolveBg(variant: ButtonVariant, colors: Colors, disabled: boolean): s
     case 'primary': return colors.primary;
     case 'success': return colors.success;
     case 'danger': return colors.danger;
+    case 'warning': return colors.warning;
     case 'info': return colors.info;
     case 'secondary': return colors.surface;
     case 'outline': return 'transparent';
@@ -43,10 +46,11 @@ export default function IconButton({
   iconSize,
   disabled = false,
   style,
+  iconColor: iconColorProp,
 }: Props) {
   const { colors } = useTheme();
   const bg = resolveBg(variant, colors, disabled);
-  const iconColor = resolveIconColor(variant, colors, disabled);
+  const iconColor = iconColorProp ?? resolveIconColor(variant, colors, disabled);
   const resolvedIconSize = iconSize ?? Math.round(size * 0.6);
 
   return (

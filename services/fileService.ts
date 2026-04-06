@@ -14,19 +14,42 @@ export async function fetchFilesForProperty(propertyId: string): Promise<FileRec
 }
 
 /**
+ * Returns a deduplicated display name for a file within a user's files.
+ * If "report.pdf" exists, returns "report (1).pdf", then "report (2).pdf", etc.
+ */
+async function resolveUniqueFileName(userId: string, fileName: string): Promise<string> {
+  const { data: existing } = await supabase
+    .from('files')
+    .select('file_name')
+    .eq('user_id', userId);
+
+  const names = new Set((existing || []).map((f) => f.file_name));
+  if (!names.has(fileName)) return fileName;
+
+  const dot = fileName.lastIndexOf('.');
+  const base = dot !== -1 ? fileName.slice(0, dot) : fileName;
+  const ext = dot !== -1 ? fileName.slice(dot) : '';
+
+  let i = 1;
+  while (names.has(`${base} (${i})${ext}`)) i++;
+  return `${base} (${i})${ext}`;
+}
+
+/**
  * Upload a document file to storage and insert a record in the files table.
  * Storage path: {userId}/{propertyId}/{timestamp}-{fileName}
- * Returns the new file's DB id and storage path.
+ * Returns the new file's DB id, storage path, and resolved display name.
  */
 export async function uploadPropertyFile(
   userId: string,
   propertyId: string,
   fileUri: string,
   fileName: string,
-): Promise<{ id: string; filePath: string }> {
+): Promise<{ id: string; filePath: string; displayName: string }> {
+  const displayName = await resolveUniqueFileName(userId, fileName);
   const response = await fetch(fileUri);
   const blob = await response.blob();
-  const filePath = `${userId}/${propertyId}/${Date.now()}-${fileName}`;
+  const filePath = `${userId}/${propertyId}/${Date.now()}-${displayName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('user_files')
@@ -35,12 +58,12 @@ export async function uploadPropertyFile(
 
   const { data, error: dbError } = await supabase
     .from('files')
-    .insert({ user_id: userId, property_id: propertyId, file_path: filePath, file_name: fileName })
+    .insert({ user_id: userId, property_id: propertyId, file_path: filePath, file_name: displayName })
     .select('id')
     .single();
   if (dbError) throw dbError;
 
-  return { id: data.id, filePath };
+  return { id: data.id, filePath, displayName };
 }
 
 /**
