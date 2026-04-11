@@ -5,6 +5,9 @@ export type Property = {
   name: string;
 };
 
+export type RecurFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type RecurAnchor = 'due_date' | 'completion';
+
 /** Shape used in UI (camelCase dates, optional fields) */
 export type TaskType = {
   id?: string;
@@ -13,6 +16,8 @@ export type TaskType = {
   dueDate?: Date | null;
   propertyId?: string | null;
   fileId?: string | null;
+  recurFrequency?: RecurFrequency | null;
+  recurAnchor?: RecurAnchor | null;
 };
 
 /** Raw DB row from the tasks table */
@@ -24,6 +29,9 @@ export type DBTask = {
   user_id: string;
   property_id: string | null;
   file_id: string | null;
+  recur_frequency: RecurFrequency | null;
+  recur_anchor: RecurAnchor | null;
+  completed_at: string | null;
 };
 
 /** DBTask enriched with the property name (used on dashboard) */

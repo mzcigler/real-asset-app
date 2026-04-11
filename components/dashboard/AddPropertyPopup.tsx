@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Button from '@/components/Button';
+import InfoPopup from '@/components/InfoPopup';
 import { LoadingModal } from '@/components/LoadingModal';
 import { useTheme } from '@/theme/ThemeContext';
 import { createProperty } from '@/services/propertyService';
@@ -15,6 +16,7 @@ export default function AddPropertyPopup({ visible, onClose, onPropertyAdded }: 
   const { colors } = useTheme();
   const [propertyName, setPropertyName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAdd = async () => {
     if (!propertyName.trim()) return;
@@ -25,7 +27,7 @@ export default function AddPropertyPopup({ visible, onClose, onPropertyAdded }: 
       onClose();
       onPropertyAdded?.();
     } catch (err: any) {
-      console.error('Failed to add property:', err.message);
+      setError(err?.message ?? 'Failed to add property. Please try again.');
     } finally {
       setAdding(false);
     }
@@ -39,6 +41,13 @@ export default function AddPropertyPopup({ visible, onClose, onPropertyAdded }: 
   return (
     <>
       <LoadingModal visible={adding} message="Adding property…" />
+      <InfoPopup
+        visible={!!error}
+        type="error"
+        title="Error"
+        message={error ?? ''}
+        onClose={() => setError(null)}
+      />
       <Modal transparent visible={visible} animationType="fade">
         <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
           <ScrollView

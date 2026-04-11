@@ -1,7 +1,8 @@
 import Dropdown from '@/components/Dropdown';
-import { fetchFilesForProperty } from '@/services/fileService';
+import { ANCHOR_OPTIONS, FREQ_OPTIONS } from '@/constants/recurrence';
+import { usePropertyFiles } from '@/hooks/usePropertyFiles';
 import { useTheme } from '@/theme/ThemeContext';
-import { FileRecord, Property, TaskType } from '@/types';
+import { FileRecord, Property, RecurAnchor, RecurFrequency, TaskType } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -13,6 +14,7 @@ type TaskItemProps = {
   task: TaskType;
   onUpdate: (updatedTask: TaskType) => void;
   onDelete: () => void;
+  onTap?: () => void;
   readOnly?: boolean;
   propertyName?: string;
   selected?: boolean;
@@ -36,6 +38,7 @@ export default function TaskItem({
   task,
   onUpdate,
   onDelete,
+  onTap,
   readOnly,
   propertyName,
   selected,
@@ -51,7 +54,15 @@ export default function TaskItem({
   const [dueDate, setDueDate] = useState<Date | null>(task.dueDate ? new Date(task.dueDate) : null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(task.propertyId ?? null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(task.fileId ?? null);
-  const [availableFiles, setAvailableFiles] = useState<FileRecord[]>(propFiles || []);
+  const [recurFrequency, setRecurFrequency] = useState<RecurFrequency | null>(task.recurFrequency ?? null);
+  const [recurAnchor, setRecurAnchor] = useState<RecurAnchor>(task.recurAnchor ?? 'completion');
+
+  const availableFiles = usePropertyFiles(
+    properties ? selectedPropertyId : null,
+    propFiles,
+    selectedFileId,
+    () => setSelectedFileId(null),
+  );
 
   useEffect(() => {
     setTitle(task.title);
@@ -59,35 +70,25 @@ export default function TaskItem({
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     setSelectedPropertyId(task.propertyId ?? null);
     setSelectedFileId(task.fileId ?? null);
+    setRecurFrequency(task.recurFrequency ?? null);
+    setRecurAnchor(task.recurAnchor ?? 'completion');
   }, [task]);
 
   useEffect(() => {
     if (selectionMode) setEditing(false);
   }, [selectionMode]);
 
-  // Dashboard mode: fetch files for the current property.
-  // Captures selectedFileId at call-time to validate it against the loaded files
-  // without making it a reactive dependency (which would cause loops).
-  useEffect(() => {
-    if (!properties) return;
-    if (!selectedPropertyId) { setAvailableFiles([]); return; }
-    const fileIdAtLoad = selectedFileId;
-    fetchFilesForProperty(selectedPropertyId).then((files) => {
-      setAvailableFiles(files);
-      // Clear file only if it doesn't belong to this property
-      if (fileIdAtLoad && !files.some((f) => f.id === fileIdAtLoad)) {
-        setSelectedFileId(null);
-      }
-    });
-  }, [selectedPropertyId, properties]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Property detail mode: use pre-loaded files
-  useEffect(() => {
-    if (propFiles) setAvailableFiles(propFiles);
-  }, [propFiles]);
-
   const handleSave = () => {
-    onUpdate({ ...task, title, description, dueDate, propertyId: selectedPropertyId, fileId: selectedFileId });
+    onUpdate({
+      ...task,
+      title,
+      description,
+      dueDate,
+      propertyId: selectedPropertyId,
+      fileId: selectedFileId,
+      recurFrequency,
+      recurAnchor: recurFrequency ? recurAnchor : null,
+    });
     setEditing(false);
   };
 
@@ -97,7 +98,8 @@ export default function TaskItem({
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     setSelectedPropertyId(task.propertyId ?? null);
     setSelectedFileId(task.fileId ?? null);
-    setAvailableFiles(propFiles || []);
+    setRecurFrequency(task.recurFrequency ?? null);
+    setRecurAnchor(task.recurAnchor ?? 'completion');
     setEditing(false);
   };
 
@@ -162,6 +164,35 @@ export default function TaskItem({
           />
           <DateInput value={dueDate} onChange={setDueDate} />
 
+          <View style={styles.editSpacer} />
+          <View style={styles.dropLabelRow}>
+            <Text style={[styles.dropLabel, { color: colors.textMuted }]}>Repeats</Text>
+            {recurFrequency && (
+              <TouchableOpacity onPress={() => setRecurFrequency(null)} hitSlop={8}>
+                <MaterialIcons name="close" size={13} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <Dropdown
+            options={FREQ_OPTIONS}
+            selected={recurFrequency}
+            onSelect={(v) => setRecurFrequency(v as RecurFrequency | null)}
+            placeholder="No recurrence"
+            size="sm"
+          />
+          {recurFrequency && (
+            <>
+              <View style={styles.editSpacer} />
+              <Dropdown
+                label="Schedule from"
+                options={ANCHOR_OPTIONS}
+                selected={recurAnchor}
+                onSelect={(v) => setRecurAnchor((v as RecurAnchor) ?? 'completion')}
+                size="sm"
+              />
+            </>
+          )}
+
           <View style={styles.btnRow}>
             <Button title="Save" size="sm" onPress={handleSave} variant="success" style={{ flex: 1 }} />
             <Button title="Cancel" size="sm" onPress={handleCancel} variant="secondary" style={{ flex: 1 }} />
@@ -169,10 +200,10 @@ export default function TaskItem({
         </View>
       ) : (
         <TouchableOpacity
-          onPress={selectionMode ? onLongPress : undefined}
+          onPress={selectionMode ? onLongPress : onTap}
           onLongPress={!selectionMode ? onLongPress : undefined}
           delayLongPress={400}
-          activeOpacity={selectionMode ? 0.7 : 1}
+          activeOpacity={selectionMode ? 0.7 : 0.85}
           style={styles.viewRow}
         >
           {selectionMode ? (
@@ -198,21 +229,27 @@ export default function TaskItem({
                 {task.description}
               </Text>
             ) : null}
-            {(dueDate || propertyName) ? (
-              <View style={styles.metaRow}>
-                {dueDate && (
-                  <Text style={[styles.metaText, { color: colors.textDisabled }]}>
-                    Due {dueDate.toISOString().split('T')[0]}
-                  </Text>
-                )}
-                {dueDate && propertyName && (
-                  <Text style={[styles.metaText, { color: colors.border }]}>·</Text>
-                )}
-                {propertyName && (
-                  <Text style={[styles.metaText, { color: colors.textDisabled }]}>{propertyName}</Text>
-                )}
-              </View>
-            ) : null}
+            <View style={styles.metaRow}>
+              {!!dueDate && (
+                <Text style={[styles.metaText, { color: colors.textDisabled }]}>
+                  Due {dueDate.toISOString().split('T')[0]}
+                </Text>
+              )}
+              {!!dueDate && !!propertyName && (
+                <Text style={[styles.metaText, { color: colors.border }]}>·</Text>
+              )}
+              {!!propertyName && (
+                <Text style={[styles.metaText, { color: colors.textDisabled }]}>{propertyName}</Text>
+              )}
+              {!!task.recurFrequency && (
+                <>
+                  {!!(dueDate || propertyName) && (
+                    <Text style={[styles.metaText, { color: colors.border }]}>·</Text>
+                  )}
+                  <MaterialIcons name="refresh" size={10} color={colors.info} />
+                </>
+              )}
+            </View>
           </View>
 
           {!readOnly && !selectionMode && (
@@ -255,6 +292,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
+  },
+  editSpacer: {
+    height: 0,
   },
   input: {
     fontWeight: '600',
@@ -312,5 +352,15 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
+  },
+  dropLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  dropLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

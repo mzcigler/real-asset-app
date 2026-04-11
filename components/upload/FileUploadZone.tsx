@@ -2,7 +2,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from '@/components/Button';
+import IconButton from '@/components/IconButton';
 import { SingleLineInput } from '@/components/Inputs';
 
 interface FileUploadZoneProps {
@@ -72,13 +72,12 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             />
           </View>
           {hasFile && (
-            <Button
-              title="✕"
+            <IconButton
+              icon="close"
+              iconSize={18}
+              size={40}
               onPress={onClearFile}
               variant="danger"
-              matchInputHeight
-              style={styles.clearBtn}
-              textStyle={styles.clearBtnText}
             />
           )}
         </View>
@@ -117,15 +116,5 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     flex: 3,
-  },
-  clearBtn: {
-    width: 40,
-    height: 40,
-    padding: 0,
-  },
-  clearBtnText: {
-    fontSize: 16,
-    marginTop: 5,
-    textAlign: 'center',
   },
 });

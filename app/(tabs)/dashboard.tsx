@@ -1,6 +1,7 @@
 import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
 import Button from '@/components/Button';
+import CompleteTaskModal, { CompleteResult } from '@/components/CompleteTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import FilterChips from '@/components/FilterChips';
 import InfoPopup from '@/components/InfoPopup';
@@ -13,10 +14,10 @@ import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteProperties, fetchProperties, renameProperty } from '@/services/propertyService';
-import { createTask, deleteTasks, fetchAllTasksForUser, updateTask } from '@/services/taskService';
+import { completeTask, createTask, deleteTasks, fetchAllTasksForUser, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
-import { Property, TaskRow, TaskType } from '@/types';
-import { sortByDueDate, toDateString } from '@/utils/taskUtils';
+import { Property, RecurAnchor, RecurFrequency, TaskRow, TaskType } from '@/types';
+import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -42,6 +43,7 @@ export default function DashboardScreen() {
   const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
   const [pendingDeletePropertyIds, setPendingDeletePropertyIds] = useState<string[]>([]);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
+  const [completingTask, setCompletingTask] = useState<TaskRow | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -102,16 +104,16 @@ export default function DashboardScreen() {
 
   // ── Task actions ──────────────────────────────────────────────────────────
 
-  const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string, fileId?: string) => {
+  const handleAddTask = async (title: string, description: string, dueDate: Date | null, propertyId?: string, fileId?: string, recurFrequency?: RecurFrequency | null, recurAnchor?: RecurAnchor | null) => {
     if (!userId) return;
-    const newTask = await createTask(userId, title, description || null, dueDate, propertyId, fileId);
+    const newTask = await createTask(userId, title, description || null, dueDate, propertyId, fileId, recurFrequency, recurAnchor);
     const propertyName = propertyId ? (properties.find((p) => p.id === propertyId)?.name || '') : '';
     setAllTasks((prev) => sortByDueDate([...prev, { ...newTask, propertyName, fileName: '' }]));
     setAddTaskVisible(false);
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, updated.propertyId, updated.fileId);
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, updated.propertyId, updated.fileId, updated.recurFrequency, updated.recurAnchor);
     setAllTasks((prev) =>
       sortByDueDate(prev.map((t) => {
         if (t.id !== taskId) return t;
@@ -125,10 +127,25 @@ export default function DashboardScreen() {
           due_date: toDateString(updated.dueDate ?? null),
           property_id: updated.propertyId ?? null,
           file_id: updated.fileId ?? null,
+          recur_frequency: updated.recurFrequency ?? null,
+          recur_anchor: updated.recurAnchor ?? null,
           propertyName,
         };
       })),
     );
+  };
+
+  const handleCompleteTask = async (result: CompleteResult) => {
+    if (!completingTask || !userId) return;
+    const nextTask = await completeTask(completingTask, userId, result.nextDueDate, result.newFrequency, result.newAnchor);
+    setAllTasks((prev) => {
+      const without = prev.filter((t) => t.id !== completingTask.id);
+      if (!nextTask) return without;
+      const propertyName = nextTask.property_id ? (properties.find((p) => p.id === nextTask.property_id)?.name || '') : '';
+      return sortByDueDate([...without, { ...nextTask, propertyName, fileName: '' }]);
+    });
+    setCompletingTask(null);
+    setSuccessMessage('Task completed!');
   };
 
   const handleDeleteTasksConfirm = async () => {
@@ -249,17 +266,11 @@ export default function DashboardScreen() {
         displayedTasks.map((task) => (
           <TaskItem
             key={task.id}
-            task={{
-              id: task.id,
-              title: task.title,
-              description: task.description ?? undefined,
-              dueDate: task.due_date ? new Date(task.due_date) : null,
-              propertyId: task.property_id,
-              fileId: task.file_id,
-            }}
+            task={dbTaskToTaskType(task)}
             propertyName={task.propertyName}
             onUpdate={(updated) => handleUpdateTask(task.id, updated)}
             onDelete={() => setPendingDeleteTaskIds([task.id])}
+            onTap={() => setCompletingTask(task)}
             selected={taskSel.selectedIds.includes(task.id)}
             selectionMode={taskSel.selectionMode}
             onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
@@ -277,7 +288,7 @@ export default function DashboardScreen() {
 
       <UploadExtractPopup
         visible={uploadVisible}
-        userId={userId!}
+        userId={userId ?? ''}
         onClose={() => setUploadVisible(false)}
         onSuccess={() => { if (userId) loadTasks(userId); }}
       />
@@ -323,6 +334,13 @@ export default function DashboardScreen() {
         onCancel={() => setPendingDeleteTaskIds([])}
         loading={deleteLoading}
         loadingLabel={pendingDeleteTaskIds.length === 1 ? 'Deleting task...' : `Deleting ${pendingDeleteTaskIds.length} tasks...`}
+      />
+
+      <CompleteTaskModal
+        visible={!!completingTask}
+        task={completingTask ? dbTaskToTaskType(completingTask) : null}
+        onClose={() => setCompletingTask(null)}
+        onComplete={handleCompleteTask}
       />
 
       <InfoPopup

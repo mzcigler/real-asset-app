@@ -1,4 +1,5 @@
 import AddTaskModal from '@/components/AddTaskModal';
+import CompleteTaskModal, { CompleteResult } from '@/components/CompleteTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
 import InfoPopup from '@/components/InfoPopup';
 import FileItem from '@/components/FileItem';
@@ -12,9 +13,9 @@ import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteFiles, downloadFile, fetchFilesForProperty } from '@/services/fileService';
-import { createTask, deleteTasks, fetchTasksForProperty, updateTask } from '@/services/taskService';
+import { completeTask, createTask, deleteTasks, fetchTasksForProperty, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
-import { DBTask, FileRecord, TaskType } from '@/types';
+import { DBTask, FileRecord, RecurAnchor, RecurFrequency, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -40,6 +41,7 @@ export default function PropertyDetailScreen() {
   const [taskFileFilter, setTaskFileFilter] = useState<string | null>(null);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
   const [pendingDeleteFileIds, setPendingDeleteFileIds] = useState<string[]>([]);
+  const [completingTask, setCompletingTask] = useState<DBTask | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -83,22 +85,41 @@ export default function PropertyDetailScreen() {
 
   // ── Task actions ──────────────────────────────────────────────────────────
 
-  const handleAddTask = async (title: string, description: string, dueDate: Date | null, _propertyId?: string, fileId?: string) => {
+  const handleAddTask = async (title: string, description: string, dueDate: Date | null, _propertyId?: string, fileId?: string, recurFrequency?: RecurFrequency | null, recurAnchor?: RecurAnchor | null) => {
     if (!userId) return;
-    const newTask = await createTask(userId, title, description || null, dueDate, id, fileId);
+    const newTask = await createTask(userId, title, description || null, dueDate, id, fileId, recurFrequency, recurAnchor);
     setTasks((prev) => sortByDueDate([...prev, newTask]));
     setAddTaskVisible(false);
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, undefined, updated.fileId);
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, undefined, updated.fileId, updated.recurFrequency, updated.recurAnchor);
     setTasks((prev) =>
       sortByDueDate(prev.map((t) =>
         t.id === taskId
-          ? { ...t, title: updated.title, description: updated.description ?? null, due_date: toDateString(updated.dueDate ?? null), file_id: updated.fileId ?? null }
+          ? {
+              ...t,
+              title: updated.title,
+              description: updated.description ?? null,
+              due_date: toDateString(updated.dueDate ?? null),
+              file_id: updated.fileId ?? null,
+              recur_frequency: updated.recurFrequency ?? null,
+              recur_anchor: updated.recurAnchor ?? null,
+            }
           : t,
       )),
     );
+  };
+
+  const handleCompleteTask = async (result: CompleteResult) => {
+    if (!completingTask || !userId) return;
+    const nextTask = await completeTask(completingTask, userId, result.nextDueDate, result.newFrequency, result.newAnchor);
+    setTasks((prev) => {
+      const without = prev.filter((t) => t.id !== completingTask.id);
+      return nextTask ? sortByDueDate([...without, nextTask]) : without;
+    });
+    setCompletingTask(null);
+    setSuccessMessage('Task completed!');
   };
 
   const handleDeleteTasksConfirm = async () => {
@@ -231,6 +252,7 @@ export default function PropertyDetailScreen() {
                     task={dbTaskToTaskType(task)}
                     onUpdate={(updated) => handleUpdateTask(task.id, updated)}
                     onDelete={() => setPendingDeleteTaskIds([task.id])}
+                    onTap={() => setCompletingTask(task)}
                     selected={taskSel.selectedIds.includes(task.id)}
                     selectionMode={taskSel.selectionMode}
                     onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
@@ -267,9 +289,16 @@ export default function PropertyDetailScreen() {
         files={allPropertyFiles}
       />
 
+      <CompleteTaskModal
+        visible={!!completingTask}
+        task={completingTask ? dbTaskToTaskType(completingTask) : null}
+        onClose={() => setCompletingTask(null)}
+        onComplete={handleCompleteTask}
+      />
+
       <UploadExtractPopup
         visible={uploadVisible}
-        userId={userId!}
+        userId={userId ?? ''}
         initialPropertyId={id}
         onClose={() => setUploadVisible(false)}
         onSuccess={() => loadData()}

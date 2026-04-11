@@ -19,6 +19,7 @@ export type ButtonVariant =
   | 'primary'
   | 'success'
   | 'danger'
+  | 'danger-outline'
   | 'warning'
   | 'info'
   | 'secondary'
@@ -51,6 +52,7 @@ function resolveColors(variant: ButtonVariant, colors: Colors, disabled: boolean
     case 'primary': return { bg: colors.primary, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'success': return { bg: colors.success, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'danger': return { bg: colors.danger, text: '#fff', borderColor: 'transparent', bordered: false };
+    case 'danger-outline': return { bg: 'transparent', text: colors.danger, borderColor: colors.danger, bordered: true };
     case 'warning': return { bg: colors.warning, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'info': return { bg: colors.info, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'secondary': return { bg: colors.surface, text: colors.textSecondary, borderColor: colors.border, bordered: true };

@@ -1,11 +1,11 @@
+import Button from '@/components/Button';
+import IconButton from '@/components/IconButton';
+import { useTheme } from '@/theme/ThemeContext';
+import { BREAKPOINT } from '@/theme/layout';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { usePathname, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { useTheme } from '@/theme/ThemeContext';
-import { BREAKPOINT } from '@/theme/layout';
-import Button from '@/components/Button';
-import IconButton from '@/components/IconButton';
 
 export default function AppHeader() {
   const { width } = useWindowDimensions();
@@ -55,7 +55,7 @@ export default function AppHeader() {
               iconColor={colors.textMuted}
               style={{ backgroundColor: 'transparent' }}
             />
-            <Button title="Sign out" onPress={handleSignOut} variant="outline" size="sm" />
+            <Button title="Sign out" onPress={handleSignOut} variant="danger-outline" size="sm" />
           </View>
         ) : (
           <View style={styles.mobileRow}>

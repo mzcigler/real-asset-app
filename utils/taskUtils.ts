@@ -1,4 +1,4 @@
-import { DBTask, TaskType } from '@/types';
+import { DBTask, RecurAnchor, RecurFrequency, TaskType } from '@/types';
 
 /** Sort tasks ascending by due_date; nulls last */
 export function sortByDueDate<T extends { due_date: string | null }>(items: T[]): T[] {
@@ -10,6 +10,27 @@ export function sortByDueDate<T extends { due_date: string | null }>(items: T[])
   });
 }
 
+/**
+ * Compute the next due date for a recurring task.
+ * anchor='due_date'  → base = current due date (fixed schedule, stays on track)
+ * anchor='completion' → base = today (resets from when the task was done)
+ */
+export function computeNextDueDate(
+  currentDueDate: Date | null,
+  frequency: RecurFrequency,
+  anchor: RecurAnchor,
+): Date {
+  const base = anchor === 'completion' ? new Date() : (currentDueDate ?? new Date());
+  const next = new Date(base);
+  switch (frequency) {
+    case 'daily':   next.setDate(next.getDate() + 1); break;
+    case 'weekly':  next.setDate(next.getDate() + 7); break;
+    case 'monthly': next.setMonth(next.getMonth() + 1); break;
+    case 'yearly':  next.setFullYear(next.getFullYear() + 1); break;
+  }
+  return next;
+}
+
 /** Convert a DB task row to the UI TaskType shape */
 export function dbTaskToTaskType(t: DBTask): TaskType {
   return {
@@ -19,6 +40,8 @@ export function dbTaskToTaskType(t: DBTask): TaskType {
     dueDate: t.due_date ? new Date(t.due_date) : null,
     propertyId: t.property_id,
     fileId: t.file_id,
+    recurFrequency: t.recur_frequency,
+    recurAnchor: t.recur_anchor,
   };
 }
 

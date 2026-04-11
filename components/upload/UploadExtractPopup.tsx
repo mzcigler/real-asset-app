@@ -4,6 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Button from '@/components/Button';
+import InfoPopup from '@/components/InfoPopup';
 import { FileUploadZone } from './FileUploadZone';
 import { MultiLineInput } from '@/components/Inputs';
 import { LoadingModal } from '@/components/LoadingModal';
@@ -11,6 +12,8 @@ import PropertyDropdown from './PropertiesDropdown';
 import TaskConfirmationPopup from './TaskConfirmationPopup';
 import { useTheme } from '@/theme/ThemeContext';
 import { TaskType } from '@/types';
+
+type PickedFile = DocumentPicker.DocumentPickerAsset;
 
 type Props = {
   visible: boolean;
@@ -25,13 +28,14 @@ export default function UploadExtractPopup({ visible, userId, onClose, onSuccess
   const { colors } = useTheme();
   const [fileName, setFileName] = useState<string | undefined>();
   const [fileId, setFileId] = useState<string | undefined>();
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<PickedFile | null>(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [desc, setDesc] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<string | null>(initialPropertyId ?? null);
   const [extractedTasks, setExtractedTasks] = useState<TaskType[]>([]);
   const [showTaskPopup, setShowTaskPopup] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isDisabled = uploading || extracting || !selectedFile || !selectedProperty;
 
@@ -93,14 +97,22 @@ export default function UploadExtractPopup({ visible, userId, onClose, onSuccess
         return { ...task, dueDate };
       });
       setExtractedTasks(tasks);
-    } catch (err) {
-      console.error('Error extracting tasks:', err);
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to process file. Please try again.');
       setUploading(false);
       setExtracting(false);
     }
   };
 
   return (
+    <>
+    <InfoPopup
+      visible={!!error}
+      type="error"
+      title="Error"
+      message={error ?? ''}
+      onClose={() => setError(null)}
+    />
     <Modal transparent visible={visible} animationType="fade">
       <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <ScrollView
@@ -174,6 +186,7 @@ export default function UploadExtractPopup({ visible, userId, onClose, onSuccess
         />
       </View>
     </Modal>
+    </>
   );
 }
 

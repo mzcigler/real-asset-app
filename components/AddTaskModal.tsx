@@ -1,11 +1,14 @@
-import Button from './Button';
 import ChipSelector from '@/components/ChipSelector';
 import { DateInput } from '@/components/DateInput';
-import { fetchFilesForProperty } from '@/services/fileService';
+import Dropdown from '@/components/Dropdown';
+import { ANCHOR_OPTIONS, FREQ_OPTIONS } from '@/constants/recurrence';
+import { usePropertyFiles } from '@/hooks/usePropertyFiles';
 import { useTheme } from '@/theme/ThemeContext';
-import { FileRecord, Property } from '@/types';
-import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FileRecord, Property, RecurAnchor, RecurFrequency } from '@/types';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useState } from 'react';
+import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Button from './Button';
 import { LoadingModal } from './LoadingModal';
 
 type Props = {
@@ -17,6 +20,8 @@ type Props = {
     dueDate: Date | null,
     propertyId?: string,
     fileId?: string,
+    recurFrequency?: RecurFrequency | null,
+    recurAnchor?: RecurAnchor | null,
   ) => Promise<void>;
   /** Dashboard: shows property picker */
   properties?: Property[];
@@ -31,27 +36,30 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties, file
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
-  const [availableFiles, setAvailableFiles] = useState<FileRecord[]>(propFiles || []);
+  const [recurFrequency, setRecurFrequency] = useState<RecurFrequency | null>(null);
+  const [recurAnchor, setRecurAnchor] = useState<RecurAnchor>('completion');
   const [saving, setSaving] = useState(false);
 
-  // Dashboard mode: fetch files when selected property changes
-  useEffect(() => {
-    setSelectedFileId(null);
-    setAvailableFiles([]);
-    if (!selectedPropertyId) return;
-    fetchFilesForProperty(selectedPropertyId).then(setAvailableFiles);
-  }, [selectedPropertyId]);
-
-  // Property detail mode: use pre-loaded files
-  useEffect(() => {
-    if (propFiles) setAvailableFiles(propFiles);
-  }, [propFiles]);
+  const availableFiles = usePropertyFiles(
+    selectedPropertyId,
+    propFiles,
+    selectedFileId,
+    () => setSelectedFileId(null),
+  );
 
   const handleAdd = async () => {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      await onAdd(title.trim(), description.trim(), dueDate, selectedPropertyId ?? undefined, selectedFileId ?? undefined);
+      await onAdd(
+        title.trim(),
+        description.trim(),
+        dueDate,
+        selectedPropertyId ?? undefined,
+        selectedFileId ?? undefined,
+        recurFrequency,
+        recurFrequency ? recurAnchor : null,
+      );
       reset();
     } finally {
       setSaving(false);
@@ -64,7 +72,8 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties, file
     setDueDate(null);
     setSelectedPropertyId(null);
     setSelectedFileId(null);
-    setAvailableFiles([]);
+    setRecurFrequency(null);
+    setRecurAnchor('completion');
   };
 
   const handleCancel = () => {
@@ -134,6 +143,36 @@ export default function AddTaskModal({ visible, onClose, onAdd, properties, file
 
             <DateInput value={dueDate} onChange={setDueDate} />
 
+            <View style={styles.recurrenceSection}>
+              <View style={styles.dropLabelRow}>
+                <Text style={[styles.dropLabel, { color: colors.textMuted }]}>Repeats</Text>
+                {recurFrequency && (
+                  <TouchableOpacity onPress={() => setRecurFrequency(null)} hitSlop={8}>
+                    <MaterialIcons name="close" size={13} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Dropdown
+                options={FREQ_OPTIONS}
+                selected={recurFrequency}
+                onSelect={(v) => setRecurFrequency(v as RecurFrequency | null)}
+                placeholder="No recurrence"
+                size="sm"
+              />
+              {recurFrequency && (
+                <>
+                  <View style={styles.gap} />
+                  <Dropdown
+                    label="Schedule from"
+                    options={ANCHOR_OPTIONS}
+                    selected={recurAnchor}
+                    onSelect={(v) => setRecurAnchor((v as RecurAnchor) ?? 'completion')}
+                    size="sm"
+                  />
+                </>
+              )}
+            </View>
+
             <View style={styles.btnRow}>
               <Button
                 title={saving ? 'Saving…' : 'Add'}
@@ -180,6 +219,22 @@ const styles = StyleSheet.create({
   },
   inputMulti: {
     minHeight: 60,
+  },
+  recurrenceSection: {
+    marginTop: 12,
+  },
+  gap: {
+    height: 8,
+  },
+  dropLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  dropLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   btnRow: {
     flexDirection: 'row',

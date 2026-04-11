@@ -1,10 +1,11 @@
 import { supabase } from '@/services/supabase';
-import { DBTask, TaskRow } from '@/types';
+import { DBTask, RecurAnchor, RecurFrequency, TaskRow } from '@/types';
 import { sortByDueDate, toDateString } from '@/utils/taskUtils';
 
+const TASK_FIELDS = 'id, title, description, due_date, user_id, property_id, file_id, recur_frequency, recur_anchor, completed_at';
+
 /**
- * Fetch all tasks for a user, enriched with property name and file name.
- * Tasks are queried directly by user_id (no file join needed).
+ * Fetch all pending tasks for a user, enriched with property and file names.
  */
 export async function fetchAllTasksForUser(userId: string): Promise<TaskRow[]> {
   const { data: propData } = await supabase
@@ -16,12 +17,12 @@ export async function fetchAllTasksForUser(userId: string): Promise<TaskRow[]> {
 
   const { data: taskData } = await supabase
     .from('tasks')
-    .select('id, title, description, due_date, user_id, property_id, file_id')
-    .eq('user_id', userId);
+    .select(TASK_FIELDS)
+    .eq('user_id', userId)
+    .is('completed_at', null);
 
   if (!taskData || taskData.length === 0) return [];
 
-  // Fetch file names for any tasks linked to a file
   const fileIds = [...new Set(taskData.map((t) => t.file_id).filter(Boolean))] as string[];
   let fileNameMap: Record<string, string> = {};
   if (fileIds.length > 0) {
@@ -41,18 +42,18 @@ export async function fetchAllTasksForUser(userId: string): Promise<TaskRow[]> {
   return sortByDueDate(tasks);
 }
 
-/** Fetch all tasks belonging to a property, sorted by due date */
+/** Fetch all pending tasks belonging to a property, sorted by due date */
 export async function fetchTasksForProperty(propertyId: string): Promise<DBTask[]> {
   const { data } = await supabase
     .from('tasks')
-    .select('id, title, description, due_date, user_id, property_id, file_id')
-    .eq('property_id', propertyId);
+    .select(TASK_FIELDS)
+    .eq('property_id', propertyId)
+    .is('completed_at', null);
   return sortByDueDate(data || []);
 }
 
 /**
  * Create a new task and return the inserted row.
- * user_id is mandatory; property_id and file_id are optional links.
  */
 export async function createTask(
   userId: string,
@@ -61,6 +62,8 @@ export async function createTask(
   dueDate: Date | null,
   propertyId?: string | null,
   fileId?: string | null,
+  recurFrequency?: RecurFrequency | null,
+  recurAnchor?: RecurAnchor | null,
 ): Promise<DBTask> {
   const { data, error } = await supabase
     .from('tasks')
@@ -71,8 +74,10 @@ export async function createTask(
       due_date: toDateString(dueDate),
       property_id: propertyId || null,
       file_id: fileId || null,
+      recur_frequency: recurFrequency || null,
+      recur_anchor: recurAnchor || null,
     })
-    .select('id, title, description, due_date, user_id, property_id, file_id')
+    .select(TASK_FIELDS)
     .single();
 
   if (error || !data) throw error || new Error('Failed to create task');
@@ -87,6 +92,8 @@ export async function updateTask(
   dueDate: Date | null,
   propertyId?: string | null,
   fileId?: string | null,
+  recurFrequency?: RecurFrequency | null,
+  recurAnchor?: RecurAnchor | null,
 ): Promise<void> {
   const { error } = await supabase
     .from('tasks')
@@ -96,9 +103,55 @@ export async function updateTask(
       due_date: toDateString(dueDate),
       property_id: propertyId !== undefined ? propertyId : undefined,
       file_id: fileId !== undefined ? fileId : undefined,
+      recur_frequency: recurFrequency !== undefined ? recurFrequency : undefined,
+      recur_anchor: recurAnchor !== undefined ? recurAnchor : undefined,
     })
     .eq('id', id);
   if (error) throw error;
+}
+
+/**
+ * Mark a task as complete and optionally create the next occurrence.
+ *
+ * - If the task already recurs, uses its existing frequency/anchor.
+ * - If the task doesn't recur but newFrequency is provided, creates the next
+ *   occurrence with that recurrence so future completions keep the pattern.
+ * - Returns the newly created task, or null if no next occurrence.
+ */
+export async function completeTask(
+  task: DBTask,
+  userId: string,
+  nextDueDate: Date | null,
+  newFrequency?: RecurFrequency | null,
+  newAnchor?: RecurAnchor | null,
+): Promise<DBTask | null> {
+  await supabase
+    .from('tasks')
+    .update({ completed_at: new Date().toISOString() })
+    .eq('id', task.id);
+
+  const freq = task.recur_frequency ?? newFrequency ?? null;
+  const anchor = task.recur_anchor ?? newAnchor ?? null;
+
+  if (!freq || !nextDueDate) return null;
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({
+      user_id: userId,
+      title: task.title,
+      description: task.description,
+      due_date: toDateString(nextDueDate),
+      property_id: task.property_id,
+      file_id: task.file_id,
+      recur_frequency: freq,
+      recur_anchor: anchor,
+    })
+    .select(TASK_FIELDS)
+    .single();
+
+  if (error || !data) throw error || new Error('Failed to create next occurrence');
+  return data;
 }
 
 /** Delete one or more tasks by ID */
