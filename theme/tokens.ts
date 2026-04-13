@@ -8,6 +8,12 @@
 /** Standard height for single-line inputs; buttons use this with matchInputHeight */
 export const INPUT_HEIGHT = 40;
 
+/** Fixed height of the app header bar */
+export const HEADER_HEIGHT = 68;
+
+/** Standard width for modal dialogs */
+export const MODAL_WIDTH = 320;
+
 /**
  * Button size presets — consumed by components/Button.tsx.
  * Adjust here to change all button sizing in one place.
@@ -56,4 +62,29 @@ export const spacing = {
   md:  12,
   lg:  16,
   xl:  24,
+} as const;
+
+/** Reusable shadow presets */
+export const shadows = {
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 } as const;

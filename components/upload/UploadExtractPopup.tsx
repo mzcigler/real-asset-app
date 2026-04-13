@@ -11,6 +11,7 @@ import { LoadingModal } from '@/components/LoadingModal';
 import PropertyDropdown from './PropertiesDropdown';
 import TaskConfirmationPopup from './TaskConfirmationPopup';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { TaskType } from '@/types';
 
 type PickedFile = DocumentPicker.DocumentPickerAsset;
@@ -157,7 +158,7 @@ export default function UploadExtractPopup({ visible, userId, onClose, onSuccess
               variant={isDisabled ? 'secondary' : 'success'}
               disabled={isDisabled}
               fullWidth
-              style={{ marginBottom: 10 }}
+              style={{ marginBottom: spacing.sm + 2 }}
             />
             <Button title="Cancel" onPress={handleClose} variant="secondary" fullWidth />
 
@@ -207,23 +208,23 @@ const styles = StyleSheet.create({
   box: {
     width: '90%',
     maxWidth: 500,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
     alignSelf: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: fontSize.xxl,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   descLabel: {
     fontWeight: '600',
-    marginTop: 6,
+    marginTop: spacing.xs + 2,
     marginBottom: 2,
   },
   descHint: {
     fontSize: 12,
-    marginBottom: 6,
+    marginBottom: spacing.xs + 2,
     lineHeight: 18,
   },
 });

@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { fontSize, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function RegisterScreen() {
@@ -15,6 +16,7 @@ export default function RegisterScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -33,6 +35,10 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      showPopup('error', 'Password Mismatch', 'Passwords do not match.');
+      return;
+    }
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
 
     if (signUpError) {
@@ -109,6 +115,12 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+        <SingleLineInput
+          placeholderText="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
         <Button
           title="Register"
@@ -141,9 +153,9 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 28,
+    fontSize: fontSize.h1,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   form: {
     width: '100%',
@@ -151,6 +163,6 @@ const styles = StyleSheet.create({
   },
   nameRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
 });

@@ -5,6 +5,7 @@
  */
 import FilterChips, { ChipOption } from './FilterChips';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, View } from 'react-native';
 
 export type { ChipOption };
@@ -35,6 +36,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 });

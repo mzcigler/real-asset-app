@@ -5,6 +5,7 @@ import Button from '@/components/Button';
 import { LoadingModal } from '@/components/LoadingModal';
 import TaskItem from '@/components/TaskItem';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { TaskType } from '@/types';
 
 type Props = {
@@ -86,7 +87,7 @@ export default function TaskConfirmationPopup({
             onPress={() => setTasks((prev) => [...prev, { title: '', description: '', dueDate: null }])}
             variant="info"
             fullWidth
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: spacing.md }}
           />
 
           <View style={styles.btnRow}>
@@ -121,20 +122,20 @@ const styles = StyleSheet.create({
   box: {
     width: 500,
     maxWidth: '90%',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
     maxHeight: '80%',
   },
   title: {
-    fontSize: 18,
+    fontSize: fontSize.xxl,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   list: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   btnRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm + 2,
   },
 });

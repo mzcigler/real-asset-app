@@ -1,4 +1,6 @@
 import Button, { ButtonVariant } from '@/components/Button';
+import { fontSize, radius, spacing } from '@/theme/tokens';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
@@ -47,12 +49,18 @@ export default function InfoPopup({
     }
   }, [visible, autoDismiss]);
 
+  const hasButtons = showConfirm || !!cancelText;
+  const isSuccess = type === 'success';
+
   const titleColor =
     type === 'success' ? colors.success :
     type === 'warning' ? colors.warning :
     colors.danger;
 
-  const hasButtons = showConfirm || !!cancelText;
+  const iconName =
+    type === 'success' ? 'check-circle' :
+    type === 'warning' ? 'warning' :
+    'error';
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -61,12 +69,32 @@ export default function InfoPopup({
         onPress={dismissOnBackdropPress ? onClose : undefined}
       >
         <View style={[styles.box, { backgroundColor: colors.surface }]}>
+          {/* Icon */}
+          <View style={[styles.iconWrap, { backgroundColor: isSuccess ? colors.successLight : 'transparent' }]}>
+            <MaterialIcons
+              name={iconName}
+              size={isSuccess ? 48 : 32}
+              color={titleColor}
+            />
+          </View>
+
           {title && (
-            <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
+            <Text style={[styles.title, { color: titleColor, fontSize: isSuccess ? fontSize.xxl : fontSize.xl }]}>
+              {title}
+            </Text>
           )}
-          <Text style={[styles.message, { color: colors.textSecondary, marginBottom: hasButtons ? 20 : 0 }]}>
+
+          <Text style={[
+            styles.message,
+            {
+              color: colors.textSecondary,
+              fontSize: isSuccess ? fontSize.md : fontSize.lg,
+              marginBottom: hasButtons ? spacing.lg : 0,
+            },
+          ]}>
             {message}
           </Text>
+
           {hasButtons && (
             <View style={styles.btnGroup}>
               {cancelText && (
@@ -93,26 +121,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   box: {
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     width: '100%',
     maxWidth: 320,
+    alignItems: 'center',
+  },
+  iconWrap: {
+    borderRadius: 999,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   message: {
-    fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
   },
   btnGroup: {
-    gap: 10,
+    gap: spacing.sm + 2,
+    width: '100%',
   },
 });

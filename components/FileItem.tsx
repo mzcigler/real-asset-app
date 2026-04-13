@@ -1,6 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import IconButton from './IconButton';
 
 type Props = {
@@ -50,7 +51,7 @@ export default function FileItem({ fileName, onOpen, onDelete, selected, selecti
               },
             ]}
           >
-            {selected && <MaterialIcons name="check" size={13} color="#fff" />}
+            {selected && <MaterialIcons name="check" size={13} color={colors.textInverse} />}
           </View>
         ) : (
           <Text style={styles.emoji}>📄</Text>
@@ -80,8 +81,8 @@ export default function FileItem({ fileName, onOpen, onDelete, selected, selecti
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    marginBottom: 10,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm + 2,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    gap: 10,
+    gap: spacing.sm + 2,
   },
   checkbox: {
     width: 22,
@@ -102,10 +103,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emoji: {
-    fontSize: 20,
+    fontSize: fontSize.h3,
   },
   fileName: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     flex: 1,
   },
   divider: {

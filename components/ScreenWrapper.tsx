@@ -1,5 +1,6 @@
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
+import { SCREEN_PADDING } from '@/theme/layout';
 
 /** Keyboard-aware scroll wrapper for auth screens */
 export default function ScreenWrapper({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: SCREEN_PADDING,
   },
 });

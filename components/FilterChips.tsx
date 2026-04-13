@@ -1,5 +1,6 @@
 import HorizontalScrollWithBar from '@/components/HorizontalScrollWithBar';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export type ChipVariant = 'primary' | 'success';
@@ -56,20 +57,20 @@ export default function FilterChips({ options, selected, onSelect, variant = 'pr
 
 const styles = StyleSheet.create({
   scroll: {
-    marginBottom: 10,
+    marginBottom: spacing.sm + 2,
   },
   row: {
     flexDirection: 'row',
-    gap: 8,
-    paddingRight: 8,
+    gap: spacing.sm,
+    paddingRight: spacing.sm,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.pill,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: fontSize.sm,
   },
 });

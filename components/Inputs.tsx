@@ -1,3 +1,4 @@
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { Platform, StyleSheet, TextInput, TextInputProps } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -66,12 +67,12 @@ export function MultiLineInput({
 const styles = StyleSheet.create({
   base: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    marginBottom: spacing.md,
     width: '100%',
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
   multiLine: {
     minHeight: 80,

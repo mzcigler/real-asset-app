@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { fontSize, spacing } from '@/theme/tokens';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function ProfileScreen() {
@@ -150,18 +151,18 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 26,
+    fontSize: fontSize.h2,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   email: {
-    marginBottom: 12,
+    marginBottom: spacing.md,
     fontWeight: '600',
   },
   nameRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
 });

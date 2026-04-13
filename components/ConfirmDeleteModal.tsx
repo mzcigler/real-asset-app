@@ -14,6 +14,7 @@
  */
 
 import Button from '@/components/Button';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -87,7 +88,7 @@ export default function ConfirmDeleteModal({
                       borderColor: cascade ? colors.danger : colors.inputBorder,
                     },
                   ]}>
-                    {cascade && <MaterialIcons name="check" size={13} color="#fff" />}
+                    {cascade && <MaterialIcons name="check" size={13} color={colors.textInverse} />}
                   </View>
                   <Text style={[styles.checkLabel, { color: colors.textSecondary }]}>{cascadeLabel}</Text>
                 </TouchableOpacity>
@@ -111,48 +112,48 @@ const styles = StyleSheet.create({
   },
   box: {
     width: 320,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 17,
+    fontSize: fontSize.xl,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   message: {
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: fontSize.md,
+    marginBottom: spacing.lg,
     lineHeight: 20,
   },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 20,
+    gap: spacing.sm + 2,
+    marginBottom: spacing.lg + 4,
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 5,
+    borderRadius: radius.xs ?? 5,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkLabel: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     flex: 1,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm + 2,
   },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingTop: 4,
+    gap: spacing.sm + 2,
+    paddingTop: spacing.xs,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
 });

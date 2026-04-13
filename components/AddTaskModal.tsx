@@ -4,6 +4,7 @@ import Dropdown from '@/components/Dropdown';
 import { ANCHOR_OPTIONS, FREQ_OPTIONS } from '@/constants/recurrence';
 import { usePropertyFiles } from '@/hooks/usePropertyFiles';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { FileRecord, Property, RecurAnchor, RecurFrequency } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from 'react';
@@ -198,39 +199,39 @@ const styles = StyleSheet.create({
   },
   box: {
     width: 340,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 17,
+    fontSize: fontSize.xl,
     fontWeight: '600',
-    marginBottom: 14,
+    marginBottom: spacing.md + 2,
   },
   label: {
-    fontSize: 13,
-    marginBottom: 4,
+    fontSize: fontSize.sm,
+    marginBottom: spacing.xs,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
-    marginBottom: 12,
+    borderRadius: radius.sm,
+    padding: spacing.sm + 2,
+    fontSize: fontSize.md,
+    marginBottom: spacing.md,
   },
   inputMulti: {
     minHeight: 60,
   },
   recurrenceSection: {
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   gap: {
-    height: 8,
+    height: spacing.sm,
   },
   dropLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   dropLabel: {
     fontSize: 12,
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   },
   btnRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
+    gap: spacing.sm + 2,
+    marginTop: spacing.lg,
   },
 });

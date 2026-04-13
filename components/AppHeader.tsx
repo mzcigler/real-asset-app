@@ -2,6 +2,7 @@ import Button from '@/components/Button';
 import IconButton from '@/components/IconButton';
 import { useTheme } from '@/theme/ThemeContext';
 import { BREAKPOINT } from '@/theme/layout';
+import { fontSize, HEADER_HEIGHT, radius, spacing } from '@/theme/tokens';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { usePathname, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -99,7 +100,7 @@ export default function AppHeader() {
               onPress={handleSignOut}
               variant="danger"
               size="sm"
-              leftIcon={<MaterialIcons name="logout" size={16} color="#fff" />}
+              leftIcon={<MaterialIcons name="logout" size={16} color={colors.textInverse} />}
               style={styles.logoutItem}
             />
           </View>
@@ -149,7 +150,6 @@ function DropdownItem({
   );
 }
 
-
 const styles = StyleSheet.create({
   zWrap: {
     zIndex: 200,
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    height: 68,
+    paddingHorizontal: spacing.lg + 4,
+    height: HEADER_HEIGHT,
   },
   logoBtn: {
     flexDirection: 'column',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   logoText: {
     fontSize: 12,
@@ -178,33 +178,33 @@ const styles = StyleSheet.create({
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   navDivider: {
     width: 1,
     height: 20,
-    marginHorizontal: 8,
+    marginHorizontal: spacing.sm,
   },
   mobileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   dropdown: {
     borderBottomWidth: 1,
-    paddingVertical: 6,
+    paddingVertical: spacing.xs + 2,
   },
   dropdownDivider: {
     height: 1,
-    marginHorizontal: 20,
-    marginVertical: 4,
+    marginHorizontal: spacing.lg + 4,
+    marginVertical: spacing.xs,
   },
   logoutItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg + 4,
+    paddingVertical: spacing.md,
   },
   dismissOverlay: {
     position: 'absolute',
@@ -215,24 +215,20 @@ const styles = StyleSheet.create({
   },
   navLink: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
   },
   navLinkText: {
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg + 4,
+    paddingVertical: spacing.md,
   },
   dropdownItemText: {
-    fontSize: 15,
-  },
-  themeBtn: {
-    padding: 8,
-    borderRadius: 8,
+    fontSize: fontSize.lg,
   },
 });

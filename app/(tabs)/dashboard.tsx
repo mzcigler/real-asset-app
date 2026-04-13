@@ -21,6 +21,7 @@ import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { fontSize, spacing } from '@/theme/tokens';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function DashboardScreen() {
@@ -359,14 +360,14 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   heading: {
-    fontSize: 26,
+    fontSize: fontSize.h2,
     fontWeight: 'bold',
     flex: 1,
   },
   emptyText: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 });

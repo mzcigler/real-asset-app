@@ -74,10 +74,11 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           {hasFile && (
             <IconButton
               icon="close"
-              iconSize={18}
-              size={40}
+              iconSize={16}
+              size={34}
               onPress={onClearFile}
-              variant="danger"
+              iconColor={colors.textMuted}
+              style={{ backgroundColor: 'transparent' }}
             />
           )}
         </View>

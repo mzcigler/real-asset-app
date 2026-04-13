@@ -12,6 +12,7 @@
  */
 
 import Button from '@/components/Button';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
@@ -75,23 +76,23 @@ const styles = StyleSheet.create({
   },
   box: {
     width: 320,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 17,
+    fontSize: fontSize.xl,
     fontWeight: '600',
-    marginBottom: 14,
+    marginBottom: spacing.md + 2,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 15,
-    marginBottom: 16,
+    borderRadius: radius.sm,
+    padding: spacing.sm + 2,
+    fontSize: fontSize.lg,
+    marginBottom: spacing.lg,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm + 2,
   },
 });

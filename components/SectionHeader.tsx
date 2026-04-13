@@ -1,6 +1,7 @@
 import IconButton from './IconButton';
 import SelectionActions from './SelectionActions';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, View } from 'react-native';
 
 type Props = {
@@ -42,11 +43,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 8,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 18,
+    fontSize: fontSize.xxl,
     fontWeight: '600',
     flex: 1,
   },

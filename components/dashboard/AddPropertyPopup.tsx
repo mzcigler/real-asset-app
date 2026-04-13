@@ -4,6 +4,7 @@ import Button from '@/components/Button';
 import InfoPopup from '@/components/InfoPopup';
 import { LoadingModal } from '@/components/LoadingModal';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { createProperty } from '@/services/propertyService';
 
 type Props = {
@@ -78,7 +79,7 @@ export default function AddPropertyPopup({ visible, onClose, onPropertyAdded }: 
                 variant="success"
                 disabled={adding || !propertyName.trim()}
                 fullWidth
-                style={{ marginBottom: 10 }}
+                style={{ marginBottom: spacing.sm + 2 }}
               />
               <Button title="Cancel" onPress={handleCancel} variant="secondary" fullWidth />
             </View>
@@ -103,22 +104,22 @@ const styles = StyleSheet.create({
   box: {
     width: 400,
     maxWidth: '90%',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
   },
   title: {
-    fontSize: 18,
+    fontSize: fontSize.xxl,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   label: {
-    marginBottom: 6,
+    marginBottom: spacing.xs + 2,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-    fontSize: 15,
+    borderRadius: radius.sm,
+    padding: spacing.sm + 2,
+    marginBottom: spacing.lg,
+    fontSize: fontSize.lg,
   },
 });

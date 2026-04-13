@@ -1,5 +1,6 @@
 import { SingleLineInput } from '@/components/Inputs';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, View } from 'react-native';
 
 type PhoneInputProps = {
@@ -44,20 +45,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: 78,
-    marginRight: 8,
-    marginBottom: 12,
+    marginRight: spacing.sm,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.sm + 2,
   },
   flag: {
-    fontSize: 14,
-    marginRight: 4,
+    fontSize: fontSize.md,
+    marginRight: spacing.xs,
   },
   codeText: {
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
   phoneInput: {
     flex: 1,

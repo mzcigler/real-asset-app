@@ -2,6 +2,7 @@ import Dropdown from '@/components/Dropdown';
 import { ANCHOR_OPTIONS, FREQ_OPTIONS } from '@/constants/recurrence';
 import { usePropertyFiles } from '@/hooks/usePropertyFiles';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { FileRecord, Property, RecurAnchor, RecurFrequency, TaskType } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
@@ -140,33 +141,42 @@ export default function TaskItem({
             />
           )}
 
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Task title"
-            placeholderTextColor={colors.inputPlaceholder}
-            style={[styles.input, {
-              borderColor: colors.inputBorder,
-              color: colors.textPrimary,
-              backgroundColor: colors.inputBackground,
-            }]}
-          />
-          <TextInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Description (optional)"
-            placeholderTextColor={colors.inputPlaceholder}
-            style={[styles.input, {
-              borderColor: colors.inputBorder,
-              color: colors.textSecondary,
-              backgroundColor: colors.inputBackground,
-            }]}
-          />
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Title *</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Task title"
+              placeholderTextColor={colors.inputPlaceholder}
+              style={[styles.input, {
+                borderColor: colors.inputBorder,
+                color: colors.textPrimary,
+                backgroundColor: colors.inputBackground,
+              }]}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Description</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional"
+              placeholderTextColor={colors.inputPlaceholder}
+              style={[styles.input, {
+                borderColor: colors.inputBorder,
+                color: colors.textSecondary,
+                backgroundColor: colors.inputBackground,
+              }]}
+            />
+          </View>
+
           <DateInput value={dueDate} onChange={setDueDate} />
 
-          <View style={styles.editSpacer} />
-          <View style={styles.dropLabelRow}>
-            <Text style={[styles.dropLabel, { color: colors.textMuted }]}>Repeats</Text>
+          <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
+
+          <View style={styles.recurrenceRow}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted, marginBottom: 0 }]}>Repeats</Text>
             {recurFrequency && (
               <TouchableOpacity onPress={() => setRecurFrequency(null)} hitSlop={8}>
                 <MaterialIcons name="close" size={13} color={colors.textMuted} />
@@ -181,16 +191,13 @@ export default function TaskItem({
             size="sm"
           />
           {recurFrequency && (
-            <>
-              <View style={styles.editSpacer} />
-              <Dropdown
-                label="Schedule from"
-                options={ANCHOR_OPTIONS}
-                selected={recurAnchor}
-                onSelect={(v) => setRecurAnchor((v as RecurAnchor) ?? 'completion')}
-                size="sm"
-              />
-            </>
+            <Dropdown
+              label="Schedule from"
+              options={ANCHOR_OPTIONS}
+              selected={recurAnchor}
+              onSelect={(v) => setRecurAnchor((v as RecurAnchor) ?? 'completion')}
+              size="sm"
+            />
           )}
 
           <View style={styles.btnRow}>
@@ -216,7 +223,7 @@ export default function TaskItem({
                 },
               ]}
             >
-              {selected && <MaterialIcons name="check" size={12} color="#fff" />}
+              {selected && <MaterialIcons name="check" size={12} color={colors.textInverse} />}
             </View>
           ) : (
             <View style={[styles.urgencyDot, { backgroundColor: getUrgencyColor(dueDate, colors) }]} />
@@ -280,46 +287,60 @@ export default function TaskItem({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 10,
-    marginBottom: 6,
+    borderRadius: radius.md,
+    marginBottom: spacing.xs + 2,
     overflow: 'hidden',
   },
   editContainer: {
-    padding: 12,
-    gap: 8,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   editHeader: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
-  editSpacer: {
-    height: 0,
+  field: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   input: {
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: fontSize.md,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm + 2,
     paddingVertical: 7,
+  },
+  divider: {
+    height: 1,
+    marginVertical: spacing.xs,
+  },
+  recurrenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   btnRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   viewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    marginRight: 10,
+    marginRight: spacing.sm + 2,
     flexShrink: 0,
     borderWidth: 2,
     alignItems: 'center',
@@ -329,16 +350,16 @@ const styles = StyleSheet.create({
     width: 11,
     height: 11,
     borderRadius: 6,
-    marginRight: 10,
+    marginRight: spacing.sm + 2,
     flexShrink: 0,
   },
   content: {
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   taskTitle: {
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
   taskDesc: {
     fontSize: 12,
@@ -348,19 +369,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 3,
-    gap: 4,
+    gap: spacing.xs,
   },
   metaText: {
-    fontSize: 11,
-  },
-  dropLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  dropLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSize.xs,
   },
 });

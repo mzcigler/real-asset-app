@@ -19,6 +19,7 @@ import { DBTask, FileRecord, RecurAnchor, RecurFrequency, TaskType } from '@/typ
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { fontSize, spacing } from '@/theme/tokens';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type Section = 'tasks' | 'files';
@@ -359,24 +360,24 @@ const styles = StyleSheet.create({
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
   propertyName: {
-    fontSize: 20,
+    fontSize: fontSize.h3,
     fontWeight: 'bold',
     flex: 1,
   },
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
   tabs: { flex: 1 },
   emptyText: {
     textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 16,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
 });

@@ -6,6 +6,7 @@ import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { fontSize, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
@@ -82,17 +83,17 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   themeToggle: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    padding: 8,
+    top: spacing.lg,
+    right: spacing.lg,
+    padding: spacing.sm,
   },
   themeToggleIcon: {
     fontSize: 20,
   },
   heading: {
-    fontSize: 28,
+    fontSize: fontSize.h1,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   form: {
     width: '100%',

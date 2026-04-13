@@ -1,3 +1,4 @@
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
 import Button from './Button';
 import { useTheme } from '@/theme/ThemeContext';
@@ -18,7 +19,7 @@ export function LoadingModal({ visible, message, onCancel }: Props) {
           <ActivityIndicator size="large" color={colors.success} />
           <Text style={[
             styles.message,
-            { color: colors.textPrimary, marginBottom: onCancel ? 16 : 0 },
+            { color: colors.textPrimary, marginBottom: onCancel ? spacing.lg : 0 },
           ]}>
             {message || 'Processing…'}
           </Text>
@@ -38,15 +39,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   box: {
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
     width: 280,
     alignItems: 'center',
   },
   message: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: '600',
-    marginTop: 16,
+    marginTop: spacing.lg,
     textAlign: 'center',
   },
 });

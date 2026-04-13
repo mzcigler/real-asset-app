@@ -1,4 +1,5 @@
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 type Tab = {
@@ -45,16 +46,16 @@ export default function SegmentedControl({ tabs, selected, onSelect, style }: Pr
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 4,
+    borderRadius: radius.md,
+    padding: spacing.xs,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
     alignItems: 'center',
   },
   label: {
-    fontSize: 14,
+    fontSize: fontSize.md,
   },
 });

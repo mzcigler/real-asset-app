@@ -2,6 +2,7 @@ import Button from '@/components/Button';
 import { DateInput } from '@/components/DateInput';
 import Dropdown from '@/components/Dropdown';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { RecurAnchor, RecurFrequency, TaskType } from '@/types';
 import { ANCHOR_OPTIONS, FREQ_LABELS, FREQ_OPTIONS } from '@/constants/recurrence';
 import { computeNextDueDate } from '@/utils/taskUtils';
@@ -76,11 +77,9 @@ export default function CompleteTaskModal({ visible, task, onClose, onComplete }
         {/* Inner Pressable stops backdrop tap from dismissing when tapping inside */}
         <Pressable style={[styles.box, { backgroundColor: colors.surface }]}>
 
-          {/* Header */}
+          {/* Header — icon and title in a row, aligned to center */}
           <View style={styles.header}>
-            <View style={[styles.iconWrap, { backgroundColor: colors.successLight }]}>
-              <MaterialIcons name="check-circle-outline" size={22} color={colors.success} />
-            </View>
+            <MaterialIcons name="check-circle-outline" size={22} color={colors.success} />
             <Text style={[styles.title, { color: colors.textPrimary }]}>Complete Task?</Text>
           </View>
 
@@ -176,81 +175,74 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
   },
   box: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: radius.xl,
+    padding: spacing.lg + 4,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.sm + 2,
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 17,
+    fontSize: fontSize.xl,
     fontWeight: '600',
   },
   taskBox: {
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
-    padding: 12,
-    marginBottom: 16,
-    gap: 6,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.xs + 2,
   },
   taskName: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: '600',
   },
   recurBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 6,
+    borderRadius: radius.sm - 2,
+    paddingHorizontal: spacing.xs + 2,
     paddingVertical: 2,
   },
   recurBadgeText: {
-    fontSize: 11,
+    fontSize: fontSize.xs,
     fontWeight: '500',
   },
   label: {
     fontSize: 12,
     fontWeight: '500',
-    marginBottom: 6,
+    marginBottom: spacing.xs + 2,
   },
   loader: {
-    marginVertical: 16,
+    marginVertical: spacing.lg,
   },
   btnGroup: {
-    gap: 8,
-    marginTop: 16,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginVertical: 16,
+    gap: spacing.sm,
+    marginVertical: spacing.lg,
   },
   divider: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    fontSize: 11,
+    fontSize: fontSize.xs,
   },
   gap: {
-    height: 8,
+    height: spacing.sm,
   },
 });
