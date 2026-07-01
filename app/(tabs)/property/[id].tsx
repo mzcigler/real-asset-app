@@ -5,6 +5,7 @@ import InfoPopup from '@/components/InfoPopup';
 import FileItem from '@/components/FileItem';
 import FilterChips from '@/components/FilterChips';
 import IconButton from '@/components/IconButton';
+import ManageFeaturesModal from '@/components/ManageFeaturesModal';
 import SegmentedControl from '@/components/SegmentedControl';
 import SelectionActions from '@/components/SelectionActions';
 import TaskItem from '@/components/TaskItem';
@@ -13,13 +14,14 @@ import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteFiles, downloadFile, fetchFilesForProperty } from '@/services/fileService';
+import { fetchStandardFeatures, fetchPropertyFeatureIds } from '@/services/featureService';
 import { completeTask, createTask, deleteTasks, fetchTasksForProperty, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
-import { DBTask, FileRecord, RecurAnchor, RecurFrequency, TaskType } from '@/types';
+import { DBTask, FileRecord, RecurAnchor, RecurFrequency, StandardFeature, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { fontSize, spacing } from '@/theme/tokens';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type Section = 'tasks' | 'files';
@@ -45,6 +47,10 @@ export default function PropertyDetailScreen() {
   const [completingTask, setCompletingTask] = useState<DBTask | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [allFeatures, setAllFeatures] = useState<StandardFeature[]>([]);
+  const [enabledFeatureIds, setEnabledFeatureIds] = useState<Set<number>>(new Set());
+  const [featuresModalVisible, setFeaturesModalVisible] = useState(false);
 
   const taskSel = useSelectionMode();
   const fileSel = useSelectionMode();
@@ -77,6 +83,13 @@ export default function PropertyDetailScreen() {
       setFiles(allFiles);
 
       setTasks(await fetchTasksForProperty(id));
+
+      const [features, featureIds] = await Promise.all([
+        fetchStandardFeatures(),
+        fetchPropertyFeatureIds(id),
+      ]);
+      setAllFeatures(features);
+      setEnabledFeatureIds(new Set(featureIds));
     } catch (err) {
       console.error('Failed to load property data:', err);
     } finally {
@@ -159,6 +172,24 @@ export default function PropertyDetailScreen() {
     downloadFile(filePath, fileName).catch((err) => console.error('Download failed:', err));
   };
 
+  // ── Feature actions ───────────────────────────────────────────────────────
+
+  const handleFeatureAdded = (featureId: number, newTasks: DBTask[]) => {
+    setEnabledFeatureIds((prev) => new Set([...prev, featureId]));
+    if (newTasks.length > 0) {
+      setTasks((prev) => sortByDueDate([...prev, ...newTasks]));
+      setSuccessMessage(`Added ${newTasks.length} task${newTasks.length === 1 ? '' : 's'}`);
+    }
+  };
+
+  const handleFeatureRemoved = (featureId: number) => {
+    setEnabledFeatureIds((prev) => {
+      const next = new Set(prev);
+      next.delete(featureId);
+      return next;
+    });
+  };
+
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const activeSelectionMode = section === 'tasks' ? taskSel.selectionMode : fileSel.selectionMode;
@@ -205,6 +236,30 @@ export default function PropertyDetailScreen() {
               <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>
                 {propertyName || 'Property'}
               </Text>
+            </View>
+
+            <View style={styles.featuresRow}>
+              <View style={styles.featureChips}>
+                {enabledFeatureIds.size === 0 ? (
+                  <Text style={[styles.noFeatures, { color: colors.textMuted }]}>No features added</Text>
+                ) : (
+                  allFeatures
+                    .filter((f) => enabledFeatureIds.has(f.id))
+                    .map((f) => (
+                      <View key={f.id} style={[styles.featureChip, { backgroundColor: colors.successLight, borderColor: colors.success }]}>
+                        <Text style={[styles.featureChipText, { color: colors.success }]}>{f.name}</Text>
+                      </View>
+                    ))
+                )}
+              </View>
+              <IconButton
+                icon="tune"
+                size={32}
+                iconSize={18}
+                onPress={() => setFeaturesModalVisible(true)}
+                iconColor={colors.textSecondary}
+                style={{ backgroundColor: 'transparent' }}
+              />
             </View>
 
             <View style={styles.tabsRow}>
@@ -334,6 +389,17 @@ export default function PropertyDetailScreen() {
         cascadeLabel="Also delete linked tasks"
       />
 
+      <ManageFeaturesModal
+        visible={featuresModalVisible}
+        onClose={() => setFeaturesModalVisible(false)}
+        propertyId={id}
+        userId={userId ?? ''}
+        features={allFeatures}
+        enabledFeatureIds={enabledFeatureIds}
+        onFeatureAdded={handleFeatureAdded}
+        onFeatureRemoved={handleFeatureRemoved}
+      />
+
       <InfoPopup
         visible={!!successMessage}
         type="success"
@@ -367,6 +433,32 @@ const styles = StyleSheet.create({
     fontSize: fontSize.h3,
     fontWeight: 'bold',
     flex: 1,
+  },
+  featuresRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  featureChips: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs + 2,
+  },
+  featureChip: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  featureChipText: {
+    fontSize: fontSize.sm,
+    fontWeight: '500',
+  },
+  noFeatures: {
+    fontSize: fontSize.sm,
+    fontStyle: 'italic',
   },
   tabsRow: {
     flexDirection: 'row',
