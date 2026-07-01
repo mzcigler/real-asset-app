@@ -40,6 +40,12 @@ export type TaskRow = DBTask & {
   fileName: string;
 };
 
+export type StandardFeature = {
+  id: number;
+  name: string;
+  keywords: string[] | null;
+};
+
 /** Raw DB row from the files table */
 export type FileRecord = {
   id: string;
