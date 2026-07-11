@@ -4,6 +4,7 @@
   "homepage": "https://mzcigler.github.io/real-asset-app",
   "version": "1.0.0",
   "scripts": {
+    "setup": "bash ./scripts/setup.sh",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
