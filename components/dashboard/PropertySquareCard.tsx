@@ -71,7 +71,7 @@ export default function PropertySquareCard({
               { backgroundColor: selected ? colors.info : 'rgba(255,255,255,0.3)' },
             ]}
           >
-            {selected && <MaterialIcons name="check" size={13} color={colors.textInverse} />}
+            {selected && <MaterialIcons name="check" size={13} color={colors.headerText} />}
           </View>
         ) : (
           <TouchableOpacity
@@ -80,7 +80,8 @@ export default function PropertySquareCard({
             hitSlop={8}
             style={styles.dotsBtn}
           >
-            <MaterialIcons name="more-vert" size={16} color={colors.textInverse} />
+            {/* Backdrop is dark petrol in BOTH modes, so use the always-light header text color */}
+            <MaterialIcons name="more-vert" size={16} color={colors.headerText} />
           </TouchableOpacity>
         )}
       </View>

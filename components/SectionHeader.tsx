@@ -2,7 +2,7 @@ import IconButton from './IconButton';
 import SelectionActions from './SelectionActions';
 import { useTheme } from '@/theme/ThemeContext';
 import { fontSize, spacing } from '@/theme/tokens';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 type Props = {
   title: string;
@@ -11,6 +11,8 @@ type Props = {
   onAdd: () => void;
   onCancelSelection: () => void;
   onDeleteSelected: () => void;
+  /** Override spacing (e.g. flush inside cards) */
+  style?: ViewStyle;
 };
 
 export default function SectionHeader({
@@ -20,11 +22,12 @@ export default function SectionHeader({
   onAdd,
   onCancelSelection,
   onDeleteSelected,
+  style,
 }: Props) {
   const { colors } = useTheme();
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, style]}>
       <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
       {selectionMode ? (
         <SelectionActions

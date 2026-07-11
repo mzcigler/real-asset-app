@@ -13,7 +13,7 @@
 import { ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
+import { PAGE_MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 
 type Props = {
   children: ReactNode;
@@ -52,7 +52,7 @@ export default function PageContainer({ children, noScroll = false, style }: Pro
 const styles = StyleSheet.create({
   inner: {
     width: '100%',
-    maxWidth: MAX_WIDTH,
+    maxWidth: PAGE_MAX_WIDTH,
   },
   noScrollWrap: {
     flex: 1,

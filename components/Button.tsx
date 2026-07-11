@@ -12,7 +12,7 @@
  */
 import { useTheme } from '@/theme/ThemeContext';
 import { Colors } from '@/theme/colors';
-import { INPUT_HEIGHT, buttonSizes } from '@/theme/tokens';
+import { INPUT_HEIGHT, buttonSizes, shadows } from '@/theme/tokens';
 import { ActivityIndicator, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 export type ButtonVariant =
@@ -49,14 +49,14 @@ function resolveColors(variant: ButtonVariant, colors: Colors, disabled: boolean
     return { bg: colors.border, text: colors.textDisabled, borderColor: 'transparent', bordered: false };
   }
   switch (variant) {
-    case 'primary': return { bg: colors.primary, text: '#fff', borderColor: 'transparent', bordered: false };
+    case 'primary': return { bg: colors.primary, text: colors.textInverse, borderColor: 'transparent', bordered: false };
     case 'success': return { bg: colors.success, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'danger': return { bg: colors.danger, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'danger-outline': return { bg: 'transparent', text: colors.danger, borderColor: colors.danger, bordered: true };
     case 'warning': return { bg: colors.warning, text: '#fff', borderColor: 'transparent', bordered: false };
     case 'info': return { bg: colors.info, text: '#fff', borderColor: 'transparent', bordered: false };
-    case 'secondary': return { bg: colors.surface, text: colors.textSecondary, borderColor: colors.border, bordered: true };
-    case 'outline': return { bg: 'transparent', text: colors.info, borderColor: colors.info, bordered: true };
+    case 'secondary': return { bg: colors.surfaceSecondary, text: colors.textSecondary, borderColor: 'transparent', bordered: false };
+    case 'outline': return { bg: 'transparent', text: colors.textPrimary, borderColor: colors.inputBorder, bordered: true };
   }
 }
 
@@ -95,6 +95,7 @@ export default function Button({
           borderWidth: c.bordered ? 1 : 0,
           borderColor: c.borderColor,
           alignSelf: fullWidth ? 'stretch' : 'auto',
+          ...(c.bg !== 'transparent' && !disabled && !loading ? shadows.sm : null),
         },
         style,
       ]}
@@ -104,7 +105,7 @@ export default function Button({
 
       <Text
         style={[
-          { color: c.text, fontSize: s.fontSize, fontWeight: '600', textAlign: 'center', lineHeight: matchInputHeight ? INPUT_HEIGHT : undefined },
+          { color: c.text, fontSize: s.fontSize, fontWeight: '500', textAlign: 'center', lineHeight: matchInputHeight ? INPUT_HEIGHT : undefined },
           textStyle,
         ]}
       >
