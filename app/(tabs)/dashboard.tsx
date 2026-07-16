@@ -1,25 +1,25 @@
-import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
 import Card from '@/components/Card';
 import CompleteTaskModal, { CompleteResult } from '@/components/CompleteTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
+import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import EmptyText from '@/components/EmptyText';
 import IconButton from '@/components/IconButton';
 import InfoPopup from '@/components/InfoPopup';
 import PageContainer from '@/components/PageContainer';
 import PageHeader from '@/components/PageHeader';
 import TaskItem from '@/components/TaskItem';
-import { supabase } from '@/services/supabase';
 import { fetchProperties } from '@/services/propertyService';
+import { supabase } from '@/services/supabase';
 import { completeTask, createTask, deleteTasks, fetchAllTasksForUser, updateTask } from '@/services/taskService';
+import { BREAKPOINT, SIDEBAR_BREAKPOINT, SIDEBAR_WIDTH } from '@/theme/layout';
 import { useTheme } from '@/theme/ThemeContext';
+import { fontSize, radius, spacing } from '@/theme/tokens';
 import { Property, RecurAnchor, RecurFrequency, TaskRow, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { ComponentProps, useEffect, useState } from 'react';
-import { BREAKPOINT, SIDEBAR_BREAKPOINT, SIDEBAR_WIDTH } from '@/theme/layout';
-import { fontSize, radius, spacing } from '@/theme/tokens';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 /** How many items the dashboard previews before pointing to the full page */
@@ -149,7 +149,7 @@ export default function DashboardScreen() {
 
   return (
     <PageContainer>
-      <PageHeader title="My Dashboard" subtitle="Own your home, not just the keys." />
+      <PageHeader title="My Dashboard" subtitle="Own your home, Not just the keys." />
 
       {/* Stats */}
       <View style={styles.statsRow}>
