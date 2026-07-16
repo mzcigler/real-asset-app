@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 
-const TRACK_HEIGHT = 12;
+const TRACK_HEIGHT = 6;
 
 type Props = {
   children: React.ReactNode;

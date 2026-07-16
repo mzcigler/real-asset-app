@@ -1,32 +1,39 @@
 import AddPropertyPopup from '@/components/dashboard/AddPropertyPopup';
 import AddTaskModal from '@/components/AddTaskModal';
-import Button from '@/components/Button';
+import Card from '@/components/Card';
 import CompleteTaskModal, { CompleteResult } from '@/components/CompleteTaskModal';
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal';
-import FilterChips from '@/components/FilterChips';
+import EmptyText from '@/components/EmptyText';
+import IconButton from '@/components/IconButton';
 import InfoPopup from '@/components/InfoPopup';
 import PageContainer from '@/components/PageContainer';
-import PropertyScrollRow from '@/components/dashboard/PropertyScrollRow';
-import RenameModal from '@/components/RenameModal';
-import SectionHeader from '@/components/SectionHeader';
+import PageHeader from '@/components/PageHeader';
 import TaskItem from '@/components/TaskItem';
-import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
-import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
-import { deleteProperties, fetchProperties, renameProperty } from '@/services/propertyService';
+import { fetchProperties } from '@/services/propertyService';
 import { completeTask, createTask, deleteTasks, fetchAllTasksForUser, updateTask } from '@/services/taskService';
 import { useTheme } from '@/theme/ThemeContext';
 import { Property, RecurAnchor, RecurFrequency, TaskRow, TaskType } from '@/types';
 import { dbTaskToTaskType, sortByDueDate, toDateString } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { fontSize, spacing } from '@/theme/tokens';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ComponentProps, useEffect, useState } from 'react';
+import { BREAKPOINT, SIDEBAR_BREAKPOINT, SIDEBAR_WIDTH } from '@/theme/layout';
+import { fontSize, radius, spacing } from '@/theme/tokens';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+
+/** How many items the dashboard previews before pointing to the full page */
+const PROPERTY_PREVIEW_COUNT = 5;
+const TASK_PREVIEW_COUNT = 6;
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  // Column layout depends on the width actually left for content once the
+  // persistent sidebar (if visible) has taken its share
+  const contentWidth = width - (width >= SIDEBAR_BREAKPOINT ? SIDEBAR_WIDTH : 0);
+  const isWide = contentWidth >= BREAKPOINT;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -34,22 +41,12 @@ export default function DashboardScreen() {
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
-  const [propertyFilter, setPropertyFilter] = useState<string | null>(null);
-  const [fileFilter, setFileFilter] = useState<string | null>(null);
-
-  const [uploadVisible, setUploadVisible] = useState(false);
   const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
-
-  const [renamingProperty, setRenamingProperty] = useState<Property | null>(null);
-  const [pendingDeletePropertyIds, setPendingDeletePropertyIds] = useState<string[]>([]);
   const [pendingDeleteTaskIds, setPendingDeleteTaskIds] = useState<string[]>([]);
   const [completingTask, setCompletingTask] = useState<TaskRow | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const propertySel = useSelectionMode();
-  const taskSel = useSelectionMode();
 
   // ── Data loading ──────────────────────────────────────────────────────────
 
@@ -72,35 +69,6 @@ export default function DashboardScreen() {
     setLoadingTasks(true);
     setAllTasks(await fetchAllTasksForUser(uid));
     setLoadingTasks(false);
-  };
-
-  const handlePropertyFilterSelect = (v: string | null) => {
-    setPropertyFilter(v);
-    setFileFilter(null);
-  };
-
-  // ── Property actions ──────────────────────────────────────────────────────
-
-  const handleRenameConfirm = async (newName: string) => {
-    if (!renamingProperty) return;
-    await renameProperty(renamingProperty.id, newName);
-    setProperties((prev) => prev.map((p) => p.id === renamingProperty.id ? { ...p, name: newName } : p));
-    setRenamingProperty(null);
-  };
-
-  const handleDeletePropertiesConfirm = async (cascade?: boolean) => {
-    const count = pendingDeletePropertyIds.length;
-    setDeleteLoading(true);
-    await deleteProperties(pendingDeletePropertyIds, cascade ?? true);
-    setProperties((prev) => prev.filter((p) => !pendingDeletePropertyIds.includes(p.id)));
-    if (cascade) {
-      // Reload tasks since cascaded deletes may have removed linked tasks and files
-      if (userId) loadTasks(userId);
-    }
-    setPendingDeletePropertyIds([]);
-    propertySel.cancel();
-    setDeleteLoading(false);
-    setSuccessMessage(count === 1 ? 'Property deleted' : `${count} properties deleted`);
   };
 
   // ── Task actions ──────────────────────────────────────────────────────────
@@ -155,130 +123,114 @@ export default function DashboardScreen() {
     await deleteTasks(pendingDeleteTaskIds);
     setAllTasks((prev) => prev.filter((t) => !pendingDeleteTaskIds.includes(t.id)));
     setPendingDeleteTaskIds([]);
-    taskSel.cancel();
     setDeleteLoading(false);
     setSuccessMessage(count === 1 ? 'Task deleted' : `${count} tasks deleted`);
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const tasksFilteredByProperty = propertyFilter
-    ? allTasks.filter((t) => t.property_id === propertyFilter)
-    : allTasks;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const in30Days = new Date(today);
+  in30Days.setDate(in30Days.getDate() + 30);
 
-  const displayedTasks = fileFilter
-    ? tasksFilteredByProperty.filter((t) => t.file_id === fileFilter)
-    : tasksFilteredByProperty;
+  const overdueCount = allTasks.filter((t) => t.due_date && new Date(t.due_date) < today).length;
+  const dueSoonCount = allTasks.filter((t) => {
+    if (!t.due_date) return false;
+    const d = new Date(t.due_date);
+    return d >= today && d <= in30Days;
+  }).length;
 
-  const filesForProperty: { id: string; name: string }[] = propertyFilter
-    ? Array.from(
-        new Map(
-          tasksFilteredByProperty
-            .filter((t) => t.file_id != null && t.fileName)
-            .map((t) => [t.file_id!, { id: t.file_id!, name: t.fileName }]),
-        ).values(),
-      )
-    : [];
-
-  const pendingDeletePropertyName = properties.find((p) => p.id === pendingDeletePropertyIds[0])?.name;
+  const previewTasks = allTasks.slice(0, TASK_PREVIEW_COUNT);
+  const previewProperties = properties.slice(0, PROPERTY_PREVIEW_COUNT);
   const pendingDeleteTaskTitle = allTasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <PageContainer>
-      <View style={styles.headerRow}>
-        <Text style={[styles.heading, { color: colors.textPrimary }]}>My Dashboard</Text>
-        <Button
-          title="Upload Doc"
-          leftIcon={<MaterialIcons name="cloud-upload" size={16} color="#fff" />}
-          variant="primary"
-          size="sm"
-          onPress={() => setUploadVisible(true)}
-        />
+      <PageHeader title="My Dashboard" subtitle="Own your home, not just the keys." />
+
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <StatTile icon="apartment" label="Properties" value={loadingProperties ? '–' : properties.length} />
+        <StatTile icon="assignment" label="Open Tasks" value={loadingTasks ? '–' : allTasks.length} />
+        <StatTile icon="error-outline" label="Overdue" value={loadingTasks ? '–' : overdueCount} highlight={overdueCount > 0} />
+        <StatTile icon="schedule" label="Due in 30 Days" value={loadingTasks ? '–' : dueSoonCount} />
       </View>
 
-      <SectionHeader
-        title="My Properties"
-        selectionMode={propertySel.selectionMode}
-        selectedCount={propertySel.selectedIds.length}
-        onAdd={() => setAddPropertyVisible(true)}
-        onCancelSelection={propertySel.cancel}
-        onDeleteSelected={() => {
-          if (propertySel.selectedIds.length > 0) setPendingDeletePropertyIds(propertySel.selectedIds);
-        }}
-      />
+      {/* Two columns on desktop (properties | tasks preview), stacked on phone */}
+      <View style={isWide && styles.columns}>
+        <Card style={[styles.sectionCard, isWide && styles.propertiesCol]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>My Properties</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/properties' as any)}>
+              <Text style={[styles.link, { color: colors.primary }]}>Manage</Text>
+            </TouchableOpacity>
+            <IconButton icon="add" onPress={() => setAddPropertyVisible(true)} size={30} />
+          </View>
 
-      {loadingProperties ? (
-        <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
-      ) : properties.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No properties yet.</Text>
-      ) : (
-        <PropertyScrollRow
-          properties={properties}
-          onPress={(id) => router.push(`/(tabs)/property/${id}` as any)}
-          onRename={(property) => setRenamingProperty(property)}
-          onDelete={(property) => setPendingDeletePropertyIds([property.id])}
-          selectedIds={propertySel.selectedIds}
-          selectionMode={propertySel.selectionMode}
-          onToggleSelect={propertySel.toggle}
-          onEnterSelectionMode={propertySel.enter}
-        />
-      )}
+          {loadingProperties ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 12 }} />
+          ) : properties.length === 0 ? (
+            <EmptyText>No properties yet.</EmptyText>
+          ) : (
+            <>
+              {previewProperties.map((property) => (
+                <PropertyRow
+                  key={property.id}
+                  name={property.name}
+                  onPress={() => router.push(`/(tabs)/property/${property.id}` as any)}
+                />
+              ))}
+              {properties.length > PROPERTY_PREVIEW_COUNT && (
+                <TouchableOpacity onPress={() => router.push('/(tabs)/properties' as any)}>
+                  <Text style={[styles.link, styles.moreLink, { color: colors.primary }]}>
+                    View all {properties.length} properties
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </Card>
 
-      <SectionHeader
-        title="Upcoming Tasks"
-        selectionMode={taskSel.selectionMode}
-        selectedCount={taskSel.selectedIds.length}
-        onAdd={() => setAddTaskVisible(true)}
-        onCancelSelection={taskSel.cancel}
-        onDeleteSelected={() => {
-          if (taskSel.selectedIds.length > 0) setPendingDeleteTaskIds(taskSel.selectedIds);
-        }}
-      />
+        <Card style={[styles.sectionCard, isWide && styles.tasksCol]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Upcoming Tasks</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/maintenance' as any)}>
+              <Text style={[styles.link, { color: colors.primary }]}>View all</Text>
+            </TouchableOpacity>
+            <IconButton icon="add" onPress={() => setAddTaskVisible(true)} size={30} />
+          </View>
 
-      {!loadingTasks && properties.length > 0 && (
-        <FilterChips
-          options={[
-            { label: 'All', value: null },
-            ...properties.map((p) => ({ label: p.name, value: p.id })),
-          ]}
-          selected={propertyFilter}
-          onSelect={handlePropertyFilterSelect}
-        />
-      )}
-
-      {!loadingTasks && propertyFilter !== null && filesForProperty.length > 0 && (
-        <FilterChips
-          options={[
-            { label: 'All files', value: null },
-            ...filesForProperty.map((f) => ({ label: f.name, value: f.id })),
-          ]}
-          selected={fileFilter}
-          onSelect={setFileFilter}
-        />
-      )}
-
-      {loadingTasks ? (
-        <ActivityIndicator size="small" color={colors.success} style={{ marginVertical: 12 }} />
-      ) : displayedTasks.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No upcoming tasks.</Text>
-      ) : (
-        displayedTasks.map((task) => (
-          <TaskItem
-            key={task.id}
-            task={dbTaskToTaskType(task)}
-            propertyName={task.propertyName}
-            onUpdate={(updated) => handleUpdateTask(task.id, updated)}
-            onDelete={() => setPendingDeleteTaskIds([task.id])}
-            onTap={() => setCompletingTask(task)}
-            selected={taskSel.selectedIds.includes(task.id)}
-            selectionMode={taskSel.selectionMode}
-            onLongPress={() => taskSel.selectionMode ? taskSel.toggle(task.id) : taskSel.enter(task.id)}
-            properties={properties}
-          />
-        ))
-      )}
+          {loadingTasks ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 12 }} />
+          ) : previewTasks.length === 0 ? (
+            <EmptyText>No upcoming tasks.</EmptyText>
+          ) : (
+            <>
+              {previewTasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={dbTaskToTaskType(task)}
+                  propertyName={task.propertyName}
+                  onUpdate={(updated) => handleUpdateTask(task.id, updated)}
+                  onDelete={() => setPendingDeleteTaskIds([task.id])}
+                  onTap={() => setCompletingTask(task)}
+                  properties={properties}
+                />
+              ))}
+              {allTasks.length > TASK_PREVIEW_COUNT && (
+                <TouchableOpacity onPress={() => router.push('/(tabs)/maintenance' as any)}>
+                  <Text style={[styles.link, styles.moreLink, { color: colors.primary }]}>
+                    View all {allTasks.length} tasks
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </Card>
+      </View>
 
       <AddTaskModal
         visible={addTaskVisible}
@@ -287,54 +239,20 @@ export default function DashboardScreen() {
         properties={properties}
       />
 
-      <UploadExtractPopup
-        visible={uploadVisible}
-        userId={userId ?? ''}
-        onClose={() => setUploadVisible(false)}
-        onSuccess={() => { if (userId) loadTasks(userId); }}
-      />
-
       <AddPropertyPopup
         visible={addPropertyVisible}
         onClose={() => setAddPropertyVisible(false)}
         onPropertyAdded={() => { if (userId) loadProperties(userId); }}
       />
 
-      <RenameModal
-        visible={!!renamingProperty}
-        title="Rename Property"
-        initialValue={renamingProperty?.name ?? ''}
-        onSave={handleRenameConfirm}
-        onClose={() => setRenamingProperty(null)}
-      />
-
-      <ConfirmDeleteModal
-        visible={pendingDeletePropertyIds.length > 0}
-        title={pendingDeletePropertyIds.length === 1 ? 'Delete Property' : `Delete ${pendingDeletePropertyIds.length} Properties`}
-        message={
-          pendingDeletePropertyIds.length === 1
-            ? `Are you sure you want to delete "${pendingDeletePropertyName}"? This cannot be undone.`
-            : `Are you sure you want to delete ${pendingDeletePropertyIds.length} properties? This cannot be undone.`
-        }
-        onConfirm={handleDeletePropertiesConfirm}
-        onCancel={() => setPendingDeletePropertyIds([])}
-        loading={deleteLoading}
-        loadingLabel={pendingDeletePropertyIds.length === 1 ? 'Deleting property...' : `Deleting ${pendingDeletePropertyIds.length} properties...`}
-        cascadeLabel="Also delete all linked tasks and files"
-      />
-
       <ConfirmDeleteModal
         visible={pendingDeleteTaskIds.length > 0}
-        title={pendingDeleteTaskIds.length === 1 ? 'Delete Task' : `Delete ${pendingDeleteTaskIds.length} Tasks`}
-        message={
-          pendingDeleteTaskIds.length === 1
-            ? `Are you sure you want to delete "${pendingDeleteTaskTitle}"? This cannot be undone.`
-            : `Are you sure you want to delete ${pendingDeleteTaskIds.length} tasks? This cannot be undone.`
-        }
+        title="Delete Task"
+        message={`Are you sure you want to delete "${pendingDeleteTaskTitle}"? This cannot be undone.`}
         onConfirm={handleDeleteTasksConfirm}
         onCancel={() => setPendingDeleteTaskIds([])}
         loading={deleteLoading}
-        loadingLabel={pendingDeleteTaskIds.length === 1 ? 'Deleting task...' : `Deleting ${pendingDeleteTaskIds.length} tasks...`}
+        loadingLabel="Deleting task..."
       />
 
       <CompleteTaskModal
@@ -356,18 +274,121 @@ export default function DashboardScreen() {
   );
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StatTile({
+  icon, label, value, highlight = false,
+}: { icon: ComponentProps<typeof MaterialIcons>['name']; label: string; value: number | string; highlight?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <Card style={styles.statTile}>
+      <View style={styles.statTop}>
+        <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label.toUpperCase()}</Text>
+        <View style={[styles.statIconTile, { backgroundColor: highlight ? colors.dangerDisabled : colors.primaryLight }]}>
+          <MaterialIcons name={icon} size={16} color={highlight ? colors.danger : colors.primary} />
+        </View>
+      </View>
+      <Text style={[styles.statValue, { color: highlight ? colors.danger : colors.textPrimary }]}>{value}</Text>
+    </Card>
+  );
+}
+
+function PropertyRow({ name, onPress }: { name: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity style={styles.propertyRow} onPress={onPress}>
+      <View style={[styles.propertyIconTile, { backgroundColor: colors.primaryLight }]}>
+        <MaterialIcons name="apartment" size={18} color={colors.primary} />
+      </View>
+      <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>{name}</Text>
+      <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  headerRow: {
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  statTile: {
+    flexGrow: 1,
+    flexBasis: 150,
+  },
+  statTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
   },
-  heading: {
+  statLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+  },
+  statIconTile: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValue: {
     fontSize: fontSize.h2,
     fontWeight: 'bold',
+  },
+  columns: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xl,
+  },
+  sectionCard: {
+    marginBottom: spacing.xl,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cardTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: '600',
     flex: 1,
   },
-  emptyText: {
-    marginBottom: spacing.sm,
+  link: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  moreLink: {
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
+  },
+  propertiesCol: {
+    width: 340,
+  },
+  tasksCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  propertyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  propertyIconTile: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  propertyName: {
+    flex: 1,
+    fontSize: fontSize.md,
+    fontWeight: '500',
   },
 });

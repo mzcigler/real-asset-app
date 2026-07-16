@@ -1,12 +1,15 @@
-import AppHeader from '@/components/AppHeader';
+import SideNav from '@/components/SideNav';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
+import { SIDEBAR_BREAKPOINT } from '@/theme/layout';
 import { Slot, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= SIDEBAR_BREAKPOINT;
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
@@ -29,9 +32,11 @@ export default function TabLayout() {
   if (!ready) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <AppHeader />
-      <Slot />
+    <View style={{ flex: 1, flexDirection: isWide ? 'row' : 'column', backgroundColor: colors.background }}>
+      <SideNav />
+      <View style={{ flex: 1 }}>
+        <Slot />
+      </View>
     </View>
   );
 }

@@ -2,12 +2,14 @@ import Button from '@/components/Button';
 import InfoPopup from '@/components/InfoPopup';
 import { SingleLineInput } from '@/components/Inputs';
 import PageContainer from '@/components/PageContainer';
+import PageHeader from '@/components/PageHeader';
 import PhoneInput from '@/components/PhoneInput';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { fontSize, spacing } from '@/theme/tokens';
+import { MAX_WIDTH } from '@/theme/layout';
+import { spacing } from '@/theme/tokens';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function ProfileScreen() {
@@ -93,8 +95,9 @@ export default function ProfileScreen() {
 
   return (
     <PageContainer>
-      <Text style={[styles.heading, { color: colors.textPrimary }]}>My Profile</Text>
+      <PageHeader title="My Profile" subtitle="Manage your account details." />
 
+      <View style={styles.formBlock}>
       <Text style={[styles.email, { color: colors.textSecondary }]}>Email: {email}</Text>
 
       <View style={styles.nameRow}>
@@ -134,6 +137,7 @@ export default function ProfileScreen() {
         style={{ marginBottom: 10 }}
       />
       <Button title="Logout" onPress={handleLogout} variant="danger" fullWidth />
+      </View>
 
       <InfoPopup
         visible={popupVisible}
@@ -150,10 +154,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: fontSize.h2,
-    fontWeight: 'bold',
-    marginBottom: spacing.lg,
+  formBlock: {
+    width: '100%',
+    maxWidth: MAX_WIDTH,
   },
   email: {
     marginBottom: spacing.md,

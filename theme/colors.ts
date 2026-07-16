@@ -3,122 +3,134 @@
  *
  * All colors live here. To restyle the whole app, change values in this file.
  * Access via useTheme() hook: const { colors } = useTheme();
+ *
+ * Palette matches real-asset-app-concept-design: warm cream surfaces,
+ * deep petrol-blue primary, amber accent, red reserved for destructive.
  */
 
 export const lightColors = {
   // ── Backgrounds ──────────────────────────────────────────────────────────
-  background: '#f3f4f6',
-  surface: '#ffffff',
-  surfaceSecondary: '#f9fafb',
+  background: '#f5f2f0',
+  surface: '#fbfaf9',
+  surfaceSecondary: '#e9e6e2',
 
-  // ── Brand / Primary (teal) ────────────────────────────────────────────────
-  primary: '#0f766e',
-  primaryLight: '#f0fdf4',
+  // ── Brand / Primary (deep petrol blue) ───────────────────────────────────
+  primary: '#13435e',
+  primaryLight: '#dae9f1',
 
   // ── Text ─────────────────────────────────────────────────────────────────
-  textPrimary: '#111827',
-  textSecondary: '#374151',
-  textMuted: '#6b7280',
-  textDisabled: '#9ca3af',
-  textInverse: '#ffffff',
+  textPrimary: '#13435e',
+  textSecondary: '#243842',
+  textMuted: '#8c7b73',
+  textDisabled: '#afa39d',
+  textInverse: '#f5f2f0',
 
   // ── Borders & Dividers ────────────────────────────────────────────────────
-  border: '#e5e7eb',
-  borderLight: '#f3f4f6',
+  border: '#ded9d3',
+  borderLight: '#e9e6e2',
 
   // ── Action / Status Colors ────────────────────────────────────────────────
-  /** Green — add, save, confirm */
-  success: '#15803d',
-  successLight: '#f0fdf4',
+  /** Sage green — add, save, confirm */
+  success: '#3a7360',
+  successLight: '#e8f2ef',
   /** Red — delete, destructive */
-  danger: '#dc2626',
-  dangerDisabled: '#fca5a5',
-  /** Blue — upload, info, links */
-  info: '#2563eb',
-  infoLight: '#eff6ff',
-  /** Yellow — warnings */
+  danger: '#dc2828',
+  dangerDisabled: '#efb3b3',
+  /** Steel blue — upload, info, links */
+  info: '#477585',
+  infoLight: '#e3eef2',
+  /** Amber — warnings, highlights */
   warning: '#f59e0b',
 
   // ── Task Urgency Indicators ───────────────────────────────────────────────
-  urgencyPast: '#ef4444',    // overdue
+  urgencyPast: '#dc2828',    // overdue
   urgencyMonth: '#f59e0b',   // due within 30 days
-  urgencyFuture: '#22c55e',  // more than 30 days away
-  urgencyNone: '#d1d5db',    // no due date
+  urgencyFuture: '#50957e',  // more than 30 days away
+  urgencyNone: '#d6cfc7',    // no due date
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  headerBg: '#ffffff',
-  headerBorder: '#e5e7eb',
+  // ── Header / Sidebar (dark petrol nav, like the concept sidebar) ─────────
+  headerBg: '#173945',
+  headerBorder: '#2e5460',
+  headerText: '#efebe7',
+  headerTextMuted: '#afbcc0',
+  headerActiveBg: '#264d59',
+  /** Warm tan accent for logo + active nav item (concept --sidebar-primary) */
+  headerAccent: '#e4d9cd',
 
   // ── Scrollbar ────────────────────────────────────────────────────────────
-  scrollTrack: '#d1d5db',
-  scrollThumb: '#4b5563',
+  scrollTrack: '#ded9d3',
+  scrollThumb: '#8c7b73',
 
   // ── Property Card ────────────────────────────────────────────────────────
-  propertyBackdrop: '#0f766e',
+  propertyBackdrop: '#173945',
 
   // ── Inputs ────────────────────────────────────────────────────────────────
-  inputBorder: '#d1d5db',
-  inputBackground: '#ffffff',
-  inputPlaceholder: '#9ca3af',
+  inputBorder: '#ded9d3',
+  inputBackground: '#fbfaf9',
+  inputPlaceholder: '#afa39d',
 
   // ── Overlay ───────────────────────────────────────────────────────────────
-  overlay: 'rgba(0,0,0,0.4)',
+  overlay: 'rgba(19, 42, 54, 0.45)',
 };
 
 export const darkColors: typeof lightColors = {
   // ── Backgrounds ──────────────────────────────────────────────────────────
-  background: '#111827',
-  surface: '#1f2937',
-  surfaceSecondary: '#374151',
+  background: '#131c20',
+  surface: '#192429',
+  surfaceSecondary: '#253137',
 
   // ── Brand / Primary ───────────────────────────────────────────────────────
-  primary: '#14b8a6',
-  primaryLight: '#042f2e',
+  primary: '#59a6c0',
+  primaryLight: '#1b2e37',
 
   // ── Text ─────────────────────────────────────────────────────────────────
-  textPrimary: '#f9fafb',
-  textSecondary: '#e5e7eb',
-  textMuted: '#9ca3af',
-  textDisabled: '#6b7280',
-  textInverse: '#111827',
+  textPrimary: '#efebe7',
+  textSecondary: '#e7e0da',
+  textMuted: '#988c81',
+  textDisabled: '#6e665e',
+  textInverse: '#131c20',
 
   // ── Borders & Dividers ────────────────────────────────────────────────────
-  border: '#374151',
-  borderLight: '#1f2937',
+  border: '#29363d',
+  borderLight: '#192429',
 
   // ── Action / Status Colors ────────────────────────────────────────────────
-  success: '#16a34a',
-  successLight: '#052e16',
-  danger: '#ef4444',
-  dangerDisabled: '#7f1d1d',
-  info: '#3b82f6',
-  infoLight: '#1e3a5f',
+  success: '#498d76',
+  successLight: '#1f332c',
+  danger: '#a52727',
+  dangerDisabled: '#5c1f1f',
+  info: '#3d7a8f',
+  infoLight: '#1e3238',
   warning: '#f59e0b',
 
   // ── Task Urgency Indicators ───────────────────────────────────────────────
-  urgencyPast: '#ef4444',
+  urgencyPast: '#dc2828',
   urgencyMonth: '#f59e0b',
-  urgencyFuture: '#22c55e',
-  urgencyNone: '#6b7280',
+  urgencyFuture: '#59a68c',
+  urgencyNone: '#49545a',
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  headerBg: '#1f2937',
-  headerBorder: '#374151',
+  // ── Header / Sidebar (dark petrol nav, like the concept sidebar) ─────────
+  headerBg: '#0e161b',
+  headerBorder: '#223239',
+  headerText: '#efebe7',
+  headerTextMuted: '#8f9ca3',
+  headerActiveBg: '#1d2930',
+  headerAccent: '#59a6c0',
 
   // ── Scrollbar ────────────────────────────────────────────────────────────
-  scrollTrack: '#374151',
-  scrollThumb: '#9ca3af',
+  scrollTrack: '#29363d',
+  scrollThumb: '#988c81',
 
   // ── Property Card ────────────────────────────────────────────────────────
-  propertyBackdrop: '#0f766e',
+  propertyBackdrop: '#173945',
 
   // ── Inputs ────────────────────────────────────────────────────────────────
-  inputBorder: '#4b5563',
-  inputBackground: '#374151',
-  inputPlaceholder: '#6b7280',
+  inputBorder: '#29363d',
+  inputBackground: '#253137',
+  inputPlaceholder: '#6e665e',
 
   // ── Overlay ───────────────────────────────────────────────────────────────
-  overlay: 'rgba(0,0,0,0.6)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
 };
 
 export type Colors = typeof lightColors;

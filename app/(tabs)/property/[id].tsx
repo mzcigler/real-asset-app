@@ -6,11 +6,12 @@ import FileItem from '@/components/FileItem';
 import FilterChips from '@/components/FilterChips';
 import IconButton from '@/components/IconButton';
 import ManageFeaturesModal from '@/components/ManageFeaturesModal';
+import PageHeader from '@/components/PageHeader';
 import SegmentedControl from '@/components/SegmentedControl';
 import SelectionActions from '@/components/SelectionActions';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
-import { MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
+import { PAGE_MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
 import { deleteFiles, downloadFile, fetchFilesForProperty } from '@/services/fileService';
@@ -224,19 +225,19 @@ export default function PropertyDetailScreen() {
         <View style={styles.paddingWrap}>
           <View style={styles.maxWidth}>
 
-            <View style={styles.backRow}>
-              <IconButton
-                icon="arrow-back"
-                iconSize={22}
-                size={34}
-                onPress={() => router.push('/(tabs)/dashboard')}
-                iconColor={colors.textSecondary}
-                style={{ backgroundColor: 'transparent' }}
-              />
-              <Text style={[styles.propertyName, { color: colors.textPrimary }]} numberOfLines={1}>
-                {propertyName || 'Property'}
-              </Text>
-            </View>
+            <PageHeader
+              title={propertyName || 'Property'}
+              left={
+                <IconButton
+                  icon="arrow-back"
+                  iconSize={22}
+                  size={34}
+                  onPress={() => router.push('/(tabs)/dashboard')}
+                  iconColor={colors.textSecondary}
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              }
+            />
 
             <View style={styles.featuresRow}>
               <View style={styles.featureChips}>
@@ -421,18 +422,7 @@ const styles = StyleSheet.create({
   },
   maxWidth: {
     width: '100%',
-    maxWidth: MAX_WIDTH,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
-  },
-  propertyName: {
-    fontSize: fontSize.h3,
-    fontWeight: 'bold',
-    flex: 1,
+    maxWidth: PAGE_MAX_WIDTH,
   },
   featuresRow: {
     flexDirection: 'row',
