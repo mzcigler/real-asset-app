@@ -45,14 +45,7 @@ export default function TaskConfirmationPopup({
     setSaving(true);
     try {
       for (const task of tasks) {
-        await createTask(
-          userId,
-          task.title,
-          task.description || null,
-          task.dueDate ?? null,
-          propertyId,
-          fileId,
-        );
+        await createTask(userId, { ...task, propertyId, fileId });
       }
       onClose(true);
     } catch (err) {

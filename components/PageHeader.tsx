@@ -8,7 +8,7 @@
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
-import { fontSize, spacing } from '@/theme/tokens';
+import { fonts, fontSize, spacing } from '@/theme/tokens';
 
 type Props = {
   title: string;
@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
+    fontFamily: fonts.heading,
     fontSize: fontSize.h2,
     fontWeight: 'bold',
   },
