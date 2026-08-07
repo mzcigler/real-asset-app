@@ -1,3 +1,5 @@
+import ExtractionOverlay from '@/components/upload/ExtractionOverlay';
+import { ExtractionProvider } from '@/contexts/ExtractionContext';
 import { ThemeProvider } from '@/theme/ThemeContext';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -21,11 +23,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
+      <ExtractionProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        {/* Mounted above the navigator so document processing survives navigation. */}
+        <ExtractionOverlay />
+      </ExtractionProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );

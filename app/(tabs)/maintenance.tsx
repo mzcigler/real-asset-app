@@ -70,7 +70,8 @@ export default function MaintenanceScreen() {
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, updated.propertyId, updated.fileId, updated.recurFrequency, updated.recurAnchor);
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, updated.propertyId, updated.fileId, updated.recurFrequency, updated.recurAnchor,
+      { severity: updated.severity ?? null, moreInfo: updated.moreInfo ?? null, imageRefs: updated.imageRefs ?? null });
     setAllTasks((prev) =>
       sortByDueDate(prev.map((t) => {
         if (t.id !== taskId) return t;

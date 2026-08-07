@@ -67,6 +67,30 @@ export async function uploadPropertyFile(
 }
 
 /**
+ * Lists everything under a document's ".assets" folder, one level of subfolders deep
+ * (images/ and layout/, plus manifest.json at the root).
+ */
+async function listAssetObjects(filePath: string): Promise<string[]> {
+  const root = `${filePath}.assets`;
+  const { data: entries } = await supabase.storage.from('user_files').list(root, { limit: 1000 });
+  if (!entries?.length) return [];
+
+  const paths: string[] = [];
+  for (const entry of entries) {
+    // Storage returns folders as rows with a null id.
+    if (entry.id === null) {
+      const { data: children } = await supabase.storage
+        .from('user_files')
+        .list(`${root}/${entry.name}`, { limit: 1000 });
+      for (const child of children || []) paths.push(`${root}/${entry.name}/${child.name}`);
+    } else {
+      paths.push(`${root}/${entry.name}`);
+    }
+  }
+  return paths;
+}
+
+/**
  * Delete files from storage and their DB records.
  * @param deleteLinkedTasks - if true, also deletes all tasks linked to these files;
  *                            if false, unlinks tasks (sets file_id = null).
@@ -74,7 +98,11 @@ export async function uploadPropertyFile(
 export async function deleteFiles(files: FileRecord[], deleteLinkedTasks = true): Promise<void> {
   const paths = files.map((f) => f.file_path).filter(Boolean);
   if (paths.length > 0) {
-    await supabase.storage.from('user_files').remove(paths);
+    // Extracted images and layout chunks live in a sibling "<path>.assets" folder.
+    // Storage has no recursive delete, so they must be listed and removed explicitly or
+    // they linger forever, invisible to the app but still billed.
+    const assetPaths = (await Promise.all(paths.map(listAssetObjects))).flat();
+    await supabase.storage.from('user_files').remove([...paths, ...assetPaths]);
   }
   const ids = files.map((f) => f.id);
   if (deleteLinkedTasks) {
@@ -83,6 +111,34 @@ export async function deleteFiles(files: FileRecord[], deleteLinkedTasks = true)
     await supabase.from('tasks').update({ file_id: null }).in('file_id', ids);
   }
   await supabase.from('files').delete().in('id', ids);
+}
+
+/**
+ * Signed URLs for images extracted from a document.
+ *
+ * The user_files bucket is private, so storage paths are not directly loadable by an
+ * <Image>; they have to be exchanged for time-limited URLs first.
+ */
+export async function getSignedImageUrls(
+  paths: string[],
+  expiresInSeconds = 60 * 60,
+): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+
+  const { data, error } = await supabase.storage
+    .from('user_files')
+    .createSignedUrls(paths, expiresInSeconds);
+
+  if (error || !data) {
+    console.error('Failed to sign image URLs:', error);
+    return {};
+  }
+
+  const urls: Record<string, string> = {};
+  for (const entry of data) {
+    if (entry.signedUrl && entry.path) urls[entry.path] = entry.signedUrl;
+  }
+  return urls;
 }
 
 /** Download a file — opens a save dialog on web, share sheet on native */

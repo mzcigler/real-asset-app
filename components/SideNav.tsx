@@ -183,7 +183,6 @@ export default function SideNav() {
         visible={uploadVisible}
         userId={userId ?? ''}
         onClose={() => setUploadVisible(false)}
-        onSuccess={() => router.push('/(tabs)/maintenance' as any)}
       />
     </>
   );

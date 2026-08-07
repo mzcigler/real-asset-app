@@ -42,6 +42,10 @@ export function dbTaskToTaskType(t: DBTask): TaskType {
     fileId: t.file_id,
     recurFrequency: t.recur_frequency,
     recurAnchor: t.recur_anchor,
+    // Extraction output, so a saved task keeps its severity and its photographs.
+    severity: t.severity ?? null,
+    moreInfo: t.more_info ?? null,
+    imageRefs: t.image_refs ?? undefined,
   };
 }
 

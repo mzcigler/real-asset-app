@@ -7,6 +7,7 @@ import InfoPopup from '@/components/InfoPopup';
 import PageContainer from '@/components/PageContainer';
 import PageHeader from '@/components/PageHeader';
 import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
+import { useExtraction } from '@/contexts/ExtractionContext';
 import { supabase } from '@/services/supabase';
 import { deleteFiles, downloadFile, fetchFilesForProperty } from '@/services/fileService';
 import { fetchProperties } from '@/services/propertyService';
@@ -31,6 +32,14 @@ export default function DocumentsScreen() {
   const [pendingDeleteFile, setPendingDeleteFile] = useState<FileRecord | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { filesChangedAt, tasksSavedAt } = useExtraction();
+
+  // Documents and their tasks now arrive after this screen has already rendered, so it
+  // refetches on the provider's signals rather than on a dialog callback.
+  useEffect(() => {
+    if (userId && (filesChangedAt || tasksSavedAt)) loadDocuments(userId);
+  }, [filesChangedAt, tasksSavedAt]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -115,7 +124,6 @@ export default function DocumentsScreen() {
         visible={uploadVisible}
         userId={userId ?? ''}
         onClose={() => setUploadVisible(false)}
-        onSuccess={() => { if (userId) loadDocuments(userId); }}
       />
 
       <ConfirmDeleteModal

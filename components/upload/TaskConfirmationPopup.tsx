@@ -52,6 +52,13 @@ export default function TaskConfirmationPopup({
           task.dueDate ?? null,
           propertyId,
           fileId,
+          null,
+          null,
+          {
+            severity: task.severity ?? null,
+            moreInfo: task.moreInfo ?? null,
+            imageRefs: task.imageRefs ?? null,
+          },
         );
       }
       onClose(true);

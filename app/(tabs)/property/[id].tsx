@@ -11,6 +11,7 @@ import SegmentedControl from '@/components/SegmentedControl';
 import SelectionActions from '@/components/SelectionActions';
 import TaskItem from '@/components/TaskItem';
 import UploadExtractPopup from '@/components/upload/UploadExtractPopup';
+import { useExtraction } from '@/contexts/ExtractionContext';
 import { PAGE_MAX_WIDTH, SCREEN_PADDING } from '@/theme/layout';
 import { useSelectionMode } from '@/hooks/useSelectionMode';
 import { supabase } from '@/services/supabase';
@@ -55,6 +56,13 @@ export default function PropertyDetailScreen() {
 
   const taskSel = useSelectionMode();
   const fileSel = useSelectionMode();
+
+  const { filesChangedAt, tasksSavedAt } = useExtraction();
+
+  // Background extraction finishes long after the upload dialog closed.
+  useEffect(() => {
+    if (filesChangedAt || tasksSavedAt) loadData();
+  }, [filesChangedAt, tasksSavedAt]);
 
   useEffect(() => {
     taskSel.cancel();
@@ -108,7 +116,8 @@ export default function PropertyDetailScreen() {
   };
 
   const handleUpdateTask = async (taskId: string, updated: TaskType) => {
-    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, undefined, updated.fileId, updated.recurFrequency, updated.recurAnchor);
+    await updateTask(taskId, updated.title, updated.description ?? null, updated.dueDate ?? null, undefined, updated.fileId, updated.recurFrequency, updated.recurAnchor,
+      { severity: updated.severity ?? null, moreInfo: updated.moreInfo ?? null, imageRefs: updated.imageRefs ?? null });
     setTasks((prev) =>
       sortByDueDate(prev.map((t) =>
         t.id === taskId
@@ -358,7 +367,6 @@ export default function PropertyDetailScreen() {
         userId={userId ?? ''}
         initialPropertyId={id}
         onClose={() => setUploadVisible(false)}
-        onSuccess={() => loadData()}
       />
 
       <ConfirmDeleteModal

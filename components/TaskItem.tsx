@@ -1,13 +1,15 @@
 import Dropdown from '@/components/Dropdown';
 import { ANCHOR_OPTIONS, FREQ_OPTIONS } from '@/constants/recurrence';
+import { SEVERITY_OPTIONS, isSeverity, severityColor } from '@/constants/severity';
 import { usePropertyFiles } from '@/hooks/usePropertyFiles';
 import { useTheme } from '@/theme/ThemeContext';
 import { fontSize, radius, spacing } from '@/theme/tokens';
-import { FileRecord, Property, RecurAnchor, RecurFrequency, TaskType } from '@/types';
+import { FileRecord, Property, RecurAnchor, RecurFrequency, Severity, TaskType } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Button from './Button';
+import TaskImageStrip from './TaskImageStrip';
 import { DateInput } from './DateInput';
 import IconButton from './IconButton';
 
@@ -57,6 +59,11 @@ export default function TaskItem({
   const [selectedFileId, setSelectedFileId] = useState<string | null>(task.fileId ?? null);
   const [recurFrequency, setRecurFrequency] = useState<RecurFrequency | null>(task.recurFrequency ?? null);
   const [recurAnchor, setRecurAnchor] = useState<RecurAnchor>(task.recurAnchor ?? 'completion');
+  const [severity, setSeverity] = useState<Severity | null>(task.severity ?? null);
+  const [moreInfo, setMoreInfo] = useState(task.moreInfo ?? '');
+  const [showPhotos, setShowPhotos] = useState(false);
+
+  const photoCount = task.imageRefs?.length ?? 0;
 
   const availableFiles = usePropertyFiles(
     properties ? selectedPropertyId : null,
@@ -73,6 +80,8 @@ export default function TaskItem({
     setSelectedFileId(task.fileId ?? null);
     setRecurFrequency(task.recurFrequency ?? null);
     setRecurAnchor(task.recurAnchor ?? 'completion');
+    setSeverity(task.severity ?? null);
+    setMoreInfo(task.moreInfo ?? '');
   }, [task]);
 
   useEffect(() => {
@@ -89,6 +98,8 @@ export default function TaskItem({
       fileId: selectedFileId,
       recurFrequency,
       recurAnchor: recurFrequency ? recurAnchor : null,
+      severity,
+      moreInfo: moreInfo.trim() ? moreInfo.trim() : null,
     });
     setEditing(false);
   };
@@ -101,6 +112,8 @@ export default function TaskItem({
     setSelectedFileId(task.fileId ?? null);
     setRecurFrequency(task.recurFrequency ?? null);
     setRecurAnchor(task.recurAnchor ?? 'completion');
+    setSeverity(task.severity ?? null);
+    setMoreInfo(task.moreInfo ?? '');
     setEditing(false);
   };
 
@@ -171,6 +184,31 @@ export default function TaskItem({
             />
           </View>
 
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Additional info</Text>
+            <TextInput
+              value={moreInfo}
+              onChangeText={setMoreInfo}
+              placeholder="What was observed, and where"
+              placeholderTextColor={colors.inputPlaceholder}
+              multiline
+              style={[styles.input, styles.multiline, {
+                borderColor: colors.inputBorder,
+                color: colors.textSecondary,
+                backgroundColor: colors.inputBackground,
+              }]}
+            />
+          </View>
+
+          <Dropdown
+            label="Severity"
+            options={SEVERITY_OPTIONS}
+            selected={severity}
+            onSelect={(v) => setSeverity(isSeverity(v) ? v : null)}
+            placeholder="None"
+            size="sm"
+          />
+
           <DateInput value={dueDate} onChange={setDueDate} />
 
           <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
@@ -230,10 +268,29 @@ export default function TaskItem({
           )}
 
           <View style={styles.content}>
-            <Text style={[styles.taskTitle, { color: colors.textPrimary }]}>{task.title}</Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.taskTitle, { color: colors.textPrimary }]}>{task.title}</Text>
+              {/* Severity stays inline rather than behind the toggle: it is state, and it
+                  has to be readable at a glance down a long list. */}
+              {task.severity ? (
+                <View style={[styles.sevChip, { backgroundColor: severityColor(task.severity, colors) }]}>
+                  <Text style={styles.sevChipText}>
+                    {(task.severityLabel || task.severity).toUpperCase()}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Neither of these is clamped: they carry the extracted finding — what was
+                observed and where — which is what makes a task actionable. */}
             {task.description ? (
-              <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={1}>
+              <Text style={[styles.taskDesc, { color: colors.textMuted }]}>
                 {task.description}
+              </Text>
+            ) : null}
+            {task.moreInfo && task.moreInfo !== task.description ? (
+              <Text style={[styles.taskDesc, { color: colors.textMuted }]}>
+                {task.moreInfo}
               </Text>
             ) : null}
             <View style={styles.metaRow}>
@@ -281,6 +338,39 @@ export default function TaskItem({
           )}
         </TouchableOpacity>
       )}
+
+      {/* Sibling of the touch target above, never a child: the toggle and the thumbnails
+          are tappable in their own right, and nesting them would swallow the card's tap
+          and produce a button inside a button on web.
+
+          Collapsed by default — a task list is scanned, and a row of photographs on every
+          card costs more vertical space than it earns until you want to look. */}
+      {!editing && !selectionMode && photoCount > 0 ? (
+        <View style={styles.photos}>
+          <TouchableOpacity
+            onPress={() => setShowPhotos((v) => !v)}
+            style={styles.photoToggle}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showPhotos }}
+            accessibilityLabel={`${showPhotos ? 'Hide' : 'Show'} ${photoCount} photo${
+              photoCount === 1 ? '' : 's'
+            }`}
+          >
+            <MaterialIcons name="photo-library" size={13} color={colors.textMuted} />
+            <Text style={[styles.photoToggleText, { color: colors.textMuted }]}>
+              {photoCount} photo{photoCount === 1 ? '' : 's'}
+            </Text>
+            <MaterialIcons
+              name={showPhotos ? 'expand-less' : 'expand-more'}
+              size={16}
+              color={colors.textMuted}
+            />
+          </TouchableOpacity>
+
+          {showPhotos ? <TaskImageStrip imageRefs={task.imageRefs} size={64} /> : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -290,6 +380,44 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     marginBottom: spacing.xs + 2,
     overflow: 'hidden',
+  },
+  photos: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  photoToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+  },
+  photoToggleText: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  sevChip: {
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 1,
+    borderRadius: radius.sm,
+  },
+  sevChipText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  multiline: {
+    minHeight: 64,
+    textAlignVertical: 'top',
+    paddingTop: spacing.sm,
   },
   editContainer: {
     padding: spacing.lg,
@@ -364,6 +492,8 @@ const styles = StyleSheet.create({
   taskDesc: {
     fontSize: 12,
     marginTop: 1,
+    // Now that it wraps, it needs room to breathe across lines.
+    lineHeight: 17,
   },
   metaRow: {
     flexDirection: 'row',
