@@ -28,7 +28,7 @@ import { dbTaskToTaskType, sortByDueDate } from '@/utils/taskUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { ComponentProps, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -51,6 +51,8 @@ export default function DashboardScreen() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   /** null = "All" systems; UNASSIGNED = tasks with no system tagged */
   const [systemFilter, setSystemFilter] = useState<string | null>(null);
+  /** null = no tile selected; one of 'critical'|'moderate'|'recurring'|'completed' — set by tapping a stat tile */
+  const [severityFilter, setSeverityFilter] = useState<string | null>(null);
 
   const [addPropertyVisible, setAddPropertyVisible] = useState(false);
   const [addTaskVisible, setAddTaskVisible] = useState(false);
@@ -129,7 +131,12 @@ export default function DashboardScreen() {
     : allTasks;
 
   const criticalCount = scopedTasks.filter((t) => t.severity === 'critical').length;
+  const moderateCount = scopedTasks.filter((t) => t.severity === 'moderate').length;
+  const recurringCount = scopedTasks.filter((t) => !!t.recur_frequency).length;
   const unassignedCount = scopedTasks.filter((t) => !t.system).length;
+
+  // Tapping a stat tile toggles that filter (re-tapping the active one clears it)
+  const toggleSeverity = (key: string) => setSeverityFilter((prev) => (prev === key ? null : key));
 
   const { overall, bySystem } = computeHealthScores(scopedTasks);
   const startHere = getStartHereSuggestion(scopedTasks, bySystem);
@@ -143,11 +150,22 @@ export default function DashboardScreen() {
     ...(unassignedCount > 0 ? [{ label: `Other (${unassignedCount})`, value: UNASSIGNED }] : []),
   ];
 
-  const displayedTasks = !systemFilter
-    ? scopedTasks
-    : systemFilter === UNASSIGNED
-      ? scopedTasks.filter((t) => !t.system)
-      : scopedTasks.filter((t) => t.system === systemFilter);
+  // System/category filter (from the chips) AND severity/status filter (from the
+  // tiles) are combinable — e.g. Critical + Exterior shows only critical exterior tasks.
+  const matchesSystem = (t: TaskRow) =>
+    !systemFilter ? true : systemFilter === UNASSIGNED ? !t.system : t.system === systemFilter;
+  const matchesSeverity = (t: TaskRow) => {
+    switch (severityFilter) {
+      case 'critical': return t.severity === 'critical';
+      case 'moderate': return t.severity === 'moderate';
+      case 'recurring': return !!t.recur_frequency;
+      // The plan lists only OPEN tasks, so nothing here is "completed" — loading
+      // completed tasks would need a services/ change, which is out of scope.
+      case 'completed': return false;
+      default: return true;
+    }
+  };
+  const displayedTasks = scopedTasks.filter((t) => matchesSystem(t) && matchesSeverity(t));
 
   const pendingDeleteTaskTitle = allTasks.find((t) => t.id === pendingDeleteTaskIds[0])?.title;
   const selectedProperty = selectedPropertyId ? properties.find((p) => p.id === selectedPropertyId) : null;
@@ -164,6 +182,7 @@ export default function DashboardScreen() {
       <PageHeader
         title={greeting}
         subtitle="Own your home, not just the keys. Here's your home health summary."
+        subtitleColor={colors.gold}
         right={
           <View style={styles.propertyIndicator}>
             {properties.length > 1 && (
@@ -189,12 +208,32 @@ export default function DashboardScreen() {
         }
       />
 
-      {/* Stats */}
+      {/* Stats — each tile also acts as a quick filter for the plan below */}
       <View style={styles.statsRow}>
-        <StatTile icon="apartment" label="Properties" value={loadingProperties ? '–' : properties.length} />
-        <StatTile icon="assignment" label="Open Items" value={loadingTasks ? '–' : scopedTasks.length} />
-        <StatTile icon="error-outline" label="Critical" value={loadingTasks ? '–' : criticalCount} highlight={criticalCount > 0} />
-        <StatTile icon="check-circle-outline" label="Completed" value={loadingTasks ? '–' : completedCount} />
+        <StatTile
+          icon="warning" label="Critical" sublabel="Act now"
+          value={loadingTasks ? '–' : criticalCount}
+          iconColor={colors.severityCriticalText} badgeColor={colors.severityCriticalBg}
+          active={severityFilter === 'critical'} onPress={() => toggleSeverity('critical')}
+        />
+        <StatTile
+          icon="error-outline" label="Moderate" sublabel="Keep an eye"
+          value={loadingTasks ? '–' : moderateCount}
+          iconColor={colors.severityModerateText} badgeColor={colors.severityModerateBg}
+          active={severityFilter === 'moderate'} onPress={() => toggleSeverity('moderate')}
+        />
+        <StatTile
+          icon="repeat" label="Recurring" sublabel="On schedule"
+          value={loadingTasks ? '–' : recurringCount}
+          iconColor={colors.info} badgeColor={colors.infoLight}
+          active={severityFilter === 'recurring'} onPress={() => toggleSeverity('recurring')}
+        />
+        <StatTile
+          icon="check-circle-outline" label="Completed" sublabel="Well done"
+          value={loadingTasks ? '–' : completedCount}
+          iconColor={colors.success} badgeColor={colors.successLight}
+          active={severityFilter === 'completed'} onPress={() => toggleSeverity('completed')}
+        />
       </View>
 
       <View style={isWide && styles.columns}>
@@ -218,7 +257,7 @@ export default function DashboardScreen() {
             <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 12 }} />
           ) : displayedTasks.length === 0 ? (
             <EmptyText>
-              {scopedTasks.length === 0 ? 'No open maintenance items — nicely maintained.' : 'No items in this system.'}
+              {scopedTasks.length === 0 ? 'No open maintenance items — nicely maintained.' : 'No items match the selected filters.'}
             </EmptyText>
           ) : (
             displayedTasks.map((task) => (
@@ -279,18 +318,30 @@ export default function DashboardScreen() {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatTile({
-  icon, label, value, highlight = false,
-}: { icon: ComponentProps<typeof MaterialIcons>['name']; label: string; value: number | string; highlight?: boolean }) {
+  icon, label, value, sublabel, iconColor, badgeColor, active = false, onPress,
+}: {
+  icon: ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+  value: number | string;
+  sublabel: string;
+  iconColor: string;
+  badgeColor: string;
+  active?: boolean;
+  onPress?: () => void;
+}) {
   const { colors } = useTheme();
   return (
-    <Card style={styles.statTile}>
-      <View style={styles.statTop}>
-        <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label.toUpperCase()}</Text>
-        <View style={[styles.statIconTile, { backgroundColor: highlight ? colors.dangerDisabled : colors.primaryLight }]}>
-          <MaterialIcons name={icon} size={16} color={highlight ? colors.danger : colors.primary} />
+    <Card style={[styles.statTile, active && { borderColor: iconColor, borderWidth: 2 }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8} accessibilityRole="button">
+        <View style={styles.statTop}>
+          <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label.toUpperCase()}</Text>
+          <View style={[styles.statIconTile, { backgroundColor: badgeColor }]}>
+            <MaterialIcons name={icon} size={16} color={iconColor} />
+          </View>
         </View>
-      </View>
-      <Text style={[styles.statValue, { color: highlight ? colors.danger : colors.textPrimary }]}>{value}</Text>
+        <Text style={[styles.statValue, { color: colors.textPrimary }]}>{value}</Text>
+        <Text style={[styles.statSub, { color: colors.textMuted }]}>{sublabel}</Text>
+      </TouchableOpacity>
     </Card>
   );
 }
@@ -350,6 +401,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: fontSize.h2,
     fontWeight: 'bold',
+  },
+  statSub: {
+    fontSize: fontSize.xs,
+    marginTop: 2,
   },
   columns: {
     flexDirection: 'row',

@@ -23,9 +23,11 @@ const TOPBAR_HEIGHT = 56;
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
+// "My Properties" was removed from the nav: property switching now lives solely
+// in the dashboard header dropdown. The /(tabs)/properties route still exists but
+// is no longer linked here.
 const NAV_ITEMS: { label: string; icon: IconName; path: string }[] = [
   { label: 'Dashboard', icon: 'space-dashboard', path: '/(tabs)/dashboard' },
-  { label: 'My Properties', icon: 'apartment', path: '/(tabs)/properties' },
   { label: 'Maintenance', icon: 'assignment', path: '/(tabs)/maintenance' },
   { label: 'Documents', icon: 'description', path: '/(tabs)/documents' },
 ];

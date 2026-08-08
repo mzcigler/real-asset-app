@@ -17,6 +17,8 @@ export const lightColors = {
   // ── Brand / Primary (deep navy, matches demo.html --navy) ─────────────────
   primary: '#12425c',
   primaryLight: '#c1d7ea',
+  /** BENi gold — brand accent (e.g. the dashboard subheading) */
+  gold: '#BE9B57',
 
   // ── Text ─────────────────────────────────────────────────────────────────
   textPrimary: '#12425c',
@@ -90,6 +92,8 @@ export const darkColors: typeof lightColors = {
   // ── Brand / Primary ───────────────────────────────────────────────────────
   primary: '#59a6c0',
   primaryLight: '#1b2e37',
+  /** BENi gold — brand accent (e.g. the dashboard subheading) */
+  gold: '#BE9B57',
 
   // ── Text ─────────────────────────────────────────────────────────────────
   textPrimary: '#efebe7',

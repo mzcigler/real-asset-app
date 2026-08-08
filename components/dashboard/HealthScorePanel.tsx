@@ -29,9 +29,17 @@ type Props = {
   startHere: { title: string; systemLabel: string } | null;
 };
 
+/** Per-system breakdown bar color (unchanged thresholds). */
 function scoreColor(score: number, colors: ReturnType<typeof useTheme>['colors']) {
   if (score >= 85) return colors.success;
   if (score >= 65) return colors.warning;
+  return colors.danger;
+}
+
+/** Overall ring color: 80–100 green / 50–79 amber / 0–49 red. */
+function ringColor(score: number, colors: ReturnType<typeof useTheme>['colors']) {
+  if (score >= 80) return colors.success;
+  if (score >= 50) return colors.warning;
   return colors.danger;
 }
 
@@ -76,7 +84,7 @@ export default function HealthScorePanel({ overall, bySystem, startHere }: Props
             cx={RING_SIZE / 2}
             cy={RING_SIZE / 2}
             r={RADIUS}
-            stroke={scoreColor(overall, colors)}
+            stroke={ringColor(overall, colors)}
             strokeWidth={STROKE_WIDTH}
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
